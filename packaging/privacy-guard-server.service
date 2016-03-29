@@ -1,0 +1,14 @@
+[Unit]
+Description=Privacy Guard Server
+
+[Service]
+User=system
+Group=system
+Type=simple
+ExecStart=/usr/bin/privacy-guard-server
+Sockets=privacy-guard-server.socket
+Restart=always
+RestartSec=0
+
+[Install]
+WantedBy=multi-user.target

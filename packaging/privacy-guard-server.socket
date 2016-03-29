@@ -1,0 +1,13 @@
+[Unit]
+Description=Privacy Guard Socket
+
+[Socket]
+SocketUser=system
+SocketGroup=system
+ListenStream=/tmp/privacy_guard_server
+SocketMode=0777
+
+Service=privacy-guard-server.service
+
+[Install]
+WantedBy=sockets.target

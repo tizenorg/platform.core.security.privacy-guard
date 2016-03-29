@@ -1,0 +1,11 @@
+prefix=@PREFIX@
+exec_prefix=@EXEC_PREFIX@
+libdir=@LIBDIR@
+includedir=/usr/include
+
+Name: @PC_NAME@
+Description: @PC_DESCRIPTION@
+Version: @VERSION@
+Libs: -L${libdir} @PC_LDFLAGS@
+Cflags: @PC_CFLAGS@
+Requires: 
