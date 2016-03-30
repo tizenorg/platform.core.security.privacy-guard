@@ -28,7 +28,7 @@ public:
 		, m_bytesRead(0)
 		,m_bytesWrote(0)
 	{
-		LOGI("Created");
+		PG_LOGI("Created");
 	}
 
 	int readStream(size_t num, void * bytes);

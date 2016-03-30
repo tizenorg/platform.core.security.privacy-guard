@@ -34,10 +34,10 @@ public:
 	int removeAppPackagePrivacyInfo(const std::string pkgId);
 
 	int setPrivacySetting(const std::string pkgId, const std::string privacyId, bool isEnabled);
-	
+
 	int getPrivacyAppPackages(std::list < std::string >& pList);
 
-	int	getAppPackagePrivacyInfo(const std::string pkgId, std::list < std::pair <std::string, bool > > & pList);
+	int getAppPackagePrivacyInfo(const std::string pkgId, std::list < std::pair <std::string, bool > > & pList);
 };
 
 #endif // _IPRIVACYGUARD_H_

@@ -8,4 +8,4 @@ Description: @PC_DESCRIPTION@
 Version: @VERSION@
 Libs: -L${libdir} @PC_LDFLAGS@
 Cflags: @PC_CFLAGS@
-Requires: 
+Requires:

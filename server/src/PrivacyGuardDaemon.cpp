@@ -67,21 +67,21 @@ int
 PrivacyGuardDaemon::start(void)
 {
 	int res = 0;
-	
+
 	if (pSocketService == NULL)
-		return PRIV_FLTR_ERROR_NOT_INITIALIZED;
+		return PRIV_GUARD_ERROR_NOT_INITIALIZED;
 	res = pSocketService->start();
-	if(res != PRIV_FLTR_ERROR_SUCCESS){
-		PF_LOGE("FAIL");
+	if(res != PRIV_GUARD_ERROR_SUCCESS){
+		PG_LOGE("FAIL");
 	}
 #if 0
 	// [CYNARA]
 	if (pCynaraService == NULL)
-		return PRIV_FLTR_ERROR_NOT_INITIALIZED;
+		return PRIV_GUARD_ERROR_NOT_INITIALIZED;
 	res = pCynaraService->start();
-	if(res != PRIV_FLTR_ERROR_SUCCESS){
-		PF_LOGE("FAIL");
-	}	
+	if(res != PRIV_GUARD_ERROR_SUCCESS){
+		PG_LOGE("FAIL");
+	}
 #endif
 	return res;
 }
@@ -91,10 +91,10 @@ PrivacyGuardDaemon::stop(void)
 {
 	pSocketService->stop();
 #if 0
-	// [CYNARA]	
+	// [CYNARA]
 	pCynaraService->stop();
 #endif
-	
+
 	return 0;
 }
 

@@ -14,7 +14,6 @@
  *    limitations under the License.
  */
 
-#include <dlog.h>
 #include "PrivacyInfoService.h"
 #include "PrivacyGuardDb.h"
 #include "Utils.h"
@@ -22,13 +21,13 @@
 void
 PrivacyInfoService::PgAddPrivacyAccessLog(SocketConnection* pConnector)
 {
-	LOGI("PRIVACY PrivacyInfoService PgAddPrivacyAccessLog");
+	PG_LOGI("PRIVACY PrivacyInfoService PgAddPrivacyAccessLog");
 
 	int userId = 0;
 	std::list <std::pair<std::string, std::string>> logInfoList;
 
 	pConnector->read(&userId, &logInfoList);
-	PF_LOGD("PrivacyInfoService PgAddPrivacyAccessLog userId : %d", userId);
+	PG_LOGD("PrivacyInfoService PgAddPrivacyAccessLog userId : %d", userId);
 
 	int result = PrivacyGuardDb::getInstance()->PgAddPrivacyAccessLog(userId, logInfoList);
 
@@ -38,14 +37,14 @@ PrivacyInfoService::PgAddPrivacyAccessLog(SocketConnection* pConnector)
 void
 PrivacyInfoService::PgAddPrivacyAccessLogTest(SocketConnection* pConnector)
 {
-	LOGI("PRIVACY PrivacyInfoService PgAddPrivacyAccessLogTest");
+	PG_LOGI("PRIVACY PrivacyInfoService PgAddPrivacyAccessLogTest");
 
 	int userId = 0;
 	std::string packageId;
 	std::string privacyId;
 
 	pConnector->read(&userId, &packageId, &privacyId);
-	PF_LOGD("PrivacyInfoService PgAddPrivacyAccessLogTest userId : %d", userId);
+	PG_LOGD("PrivacyInfoService PgAddPrivacyAccessLogTest userId : %d", userId);
 
 	int result = PrivacyGuardDb::getInstance()->PgAddPrivacyAccessLogTest(userId, packageId, privacyId);
 
@@ -105,9 +104,9 @@ PrivacyInfoService::PgForeachTotalPrivacyCountOfPackage(SocketConnection* pConne
 	std::list < std::pair < std::string, int > > packageInfoList;
 	pConnector->read(&userId, &startDate, &endDate);
 
-	PF_LOGD("requested > userId : %d, startDate : %d, endDate : %d", userId, startDate, endDate);
+	PG_LOGD("requested > userId : %d, startDate : %d, endDate : %d", userId, startDate, endDate);
 	int result = PrivacyGuardDb::getInstance()->PgForeachTotalPrivacyCountOfPackage(userId, startDate, endDate, packageInfoList);
-	PF_LOGD("response > packageInfoList size : %d", packageInfoList.size());
+	PG_LOGD("response > packageInfoList size : %d", packageInfoList.size());
 
 	pConnector->write(result);
 	pConnector->write(packageInfoList);
@@ -122,9 +121,9 @@ PrivacyInfoService::PgForeachTotalPrivacyCountOfPrivacy(SocketConnection* pConne
 	std::list < std::pair < std::string, int > > privacyInfoList;
 	pConnector->read(&userId, &startDate, &endDate);
 
-	PF_LOGD("requested > startDate : %d, endDate : %d", startDate, endDate);
+	PG_LOGD("requested > startDate : %d, endDate : %d", startDate, endDate);
 	int result = PrivacyGuardDb::getInstance()->PgForeachTotalPrivacyCountOfPrivacy(userId, startDate, endDate, privacyInfoList);
-	PF_LOGD("response > privacyInfoList size : %d", privacyInfoList.size());
+	PG_LOGD("response > privacyInfoList size : %d", privacyInfoList.size());
 
 	pConnector->write(result);
 	pConnector->write(privacyInfoList);
@@ -140,11 +139,11 @@ PrivacyInfoService::PgForeachPrivacyCountByPrivacyId(SocketConnection* pConnecto
 	std::list < std::pair < std::string, int > > packageInfoList;
 	pConnector->read(&userId, &startDate, &endDate, &privacyId);
 
-	PF_LOGD("requested > startDate : %d, endDate : %d, privacyId : %s",
+	PG_LOGD("requested > startDate : %d, endDate : %d, privacyId : %s",
 			startDate, endDate, privacyId.c_str());
 	int result = PrivacyGuardDb::getInstance()->PgForeachPrivacyCountByPrivacyId(userId, startDate, endDate,
 						privacyId, packageInfoList);
-	PF_LOGD("response > packageInfoList size : %d", packageInfoList.size());
+	PG_LOGD("response > packageInfoList size : %d", packageInfoList.size());
 
 	pConnector->write(result);
 	pConnector->write(packageInfoList);
@@ -160,11 +159,11 @@ PrivacyInfoService::PgForeachPrivacyCountByPackageId(SocketConnection* pConnecto
 	std::list < std::pair < std::string, int > > privacyInfoList;
 	pConnector->read(&userId, &startDate, &endDate, &packageId);
 
-	PF_LOGD("requested > startDate : %d, endDate : %d, packageId : %s",
+	PG_LOGD("requested > startDate : %d, endDate : %d, packageId : %s",
 			startDate, endDate, packageId.c_str());
 	int result = PrivacyGuardDb::getInstance()->PgForeachPrivacyCountByPackageId(userId, startDate, endDate,
 						packageId, privacyInfoList);
-	PF_LOGD("response > privacyInfoList size : %d", privacyInfoList.size());
+	PG_LOGD("response > privacyInfoList size : %d", privacyInfoList.size());
 
 	pConnector->write(result);
 	pConnector->write(privacyInfoList);
@@ -177,10 +176,10 @@ PrivacyInfoService::PgForeachPrivacyPackageId(SocketConnection* pConnector)
 	std::list < std::string > packageList;
 
 	pConnector->read(&userId);
-	PF_LOGD("requested > userId : %d", userId);
+	PG_LOGD("requested > userId : %d", userId);
 
 	int result = PrivacyGuardDb::getInstance()->PgForeachPrivacyPackageId(userId, packageList);
-	PF_LOGD("response > packageList size : %d", packageList.size());
+	PG_LOGD("response > packageList size : %d", packageList.size());
 
 	pConnector->write(result);
 	pConnector->write(packageList);
@@ -197,7 +196,7 @@ PrivacyInfoService::PgForeachMonitorPolicyByPackageId(SocketConnection* pConnect
 	int result = -1;
 	result = PrivacyGuardDb::getInstance()->PgForeachMonitorPolicyByPackageId(userId, packageId, privacyInfoList);
 
-	PF_LOGD("response > privacyInfoList size : %d", privacyInfoList.size());
+	PG_LOGD("response > privacyInfoList size : %d", privacyInfoList.size());
 
 	pConnector->write(result);
 	pConnector->write(privacyInfoList);
@@ -211,12 +210,12 @@ PrivacyInfoService::PgGetMonitorPolicy(SocketConnection* pConnector)
 	std::string privacyId;
 	pConnector->read(&userId, &packageId, &privacyId);
 
-	PF_LOGD("requested > packageId : %s, privacyId : %s", packageId.c_str(), privacyId.c_str());
+	PG_LOGD("requested > packageId : %s, privacyId : %s", packageId.c_str(), privacyId.c_str());
 	int monitorPolicy = 1;
 	int result = -1;
 	result = PrivacyGuardDb::getInstance()->PgGetMonitorPolicy(userId, packageId, privacyId, monitorPolicy);
 
-	PF_LOGD("response > monitorPolicy : %d", monitorPolicy);
+	PG_LOGD("response > monitorPolicy : %d", monitorPolicy);
 
 	pConnector->write(result);
 	pConnector->write(monitorPolicy);
@@ -241,10 +240,10 @@ PrivacyInfoService::PgForeachPackageByPrivacyId(SocketConnection* pConnector)
 	std::list < std::string > packageList;
 
 	pConnector->read(&userId, &privacyId);
-	PF_LOGD("requested > userId : %d, privacyId : %s", userId, privacyId.c_str());
+	PG_LOGD("requested > userId : %d, privacyId : %s", userId, privacyId.c_str());
 
 	int result = PrivacyGuardDb::getInstance()->PgForeachPackageByPrivacyId(userId, privacyId, packageList);
-	PF_LOGD("response > packageList size : %d", packageList.size());
+	PG_LOGD("response > packageList size : %d", packageList.size());
 
 	pConnector->write(result);
 	pConnector->write(packageList);
@@ -258,7 +257,7 @@ PrivacyInfoService::PgCheckPrivacyPackage(SocketConnection* pConnector)
 	bool isPrivacyPackage = false;
 	pConnector->read(&userId, &packageId);
 
-	PF_LOGD("requested > packageId : %s", packageId.c_str());
+	PG_LOGD("requested > packageId : %s", packageId.c_str());
 	int result = PrivacyGuardDb::getInstance()->PgCheckPrivacyPackage(userId, packageId, isPrivacyPackage);
 
 	pConnector->write(result);
@@ -274,7 +273,7 @@ PrivacyInfoService::PgUpdateMonitorPolicy(SocketConnection* pConnector)
 	int monitorPolicy = 1;
 	pConnector->read(&userId, &packageId, &privacyId, &monitorPolicy);
 
-	PF_LOGD("requested > packageId : %s, privacyId : %s, monitorPolicy : %d",
+	PG_LOGD("requested > packageId : %s, privacyId : %s, monitorPolicy : %d",
 				packageId.c_str(), privacyId.c_str(), monitorPolicy);
 	int result = PrivacyGuardDb::getInstance()->PgUpdateMonitorPolicy(userId, packageId, privacyId, monitorPolicy);
 
@@ -288,7 +287,7 @@ PrivacyInfoService::PgUpdateMainMonitorPolicy(SocketConnection* pConnector)
 	bool mainMonitorPolicy = false;
 	pConnector->read(&userId, &mainMonitorPolicy);
 
-	PF_LOGD("requested > mainMonitorPolicy : %d", mainMonitorPolicy);
+	PG_LOGD("requested > mainMonitorPolicy : %d", mainMonitorPolicy);
 	int result = PrivacyGuardDb::getInstance()->PgUpdateMainMonitorPolicy(userId, mainMonitorPolicy);
 
 	pConnector->write(result);
@@ -300,13 +299,13 @@ PrivacyInfoService::PgGetMainMonitorPolicy(SocketConnection* pConnector)
 	int userId = 0;
 	pConnector->read(&userId);
 
-	PF_LOGD("PgGetMainMonitorPolicy userId : %d", userId);
+	PG_LOGD("PgGetMainMonitorPolicy userId : %d", userId);
 
 	bool mainMonitorPolicy = false;
 	int result = -1;
 	result = PrivacyGuardDb::getInstance()->PgGetMainMonitorPolicy(userId, mainMonitorPolicy);
 
-	PF_LOGD("response > mainMonitorPolicy : %d", mainMonitorPolicy);
+	PG_LOGD("response > mainMonitorPolicy : %d", mainMonitorPolicy);
 
 	pConnector->write(result);
 	pConnector->write(mainMonitorPolicy);

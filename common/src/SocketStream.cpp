@@ -20,7 +20,6 @@
 #include <errno.h>
 #include <cstring>
 #include <unistd.h>
-#include <dlog.h>
 #include "Utils.h"
 #include "SocketStream.h"
 
@@ -33,7 +32,7 @@
 int
 SocketStream::throwWithErrnoMessage(std::string function_name)
 {
-	LOGE("%s : %s", function_name.c_str(), strerror(errno));
+	PG_LOGE("%s : %s", function_name.c_str(), strerror(errno));
 	return errno;
 }
 
@@ -43,7 +42,7 @@ SocketStream::readStream(size_t num, void* pBytes)
 	TryReturn(pBytes != NULL, -1, , "Null pointer to buffer");
 
 	m_bytesRead += num;
-	
+
 	TryReturn(m_bytesRead <= MAX_BUFFER, -1, , "Too big buffer requested!");
 
 	char partBuffer[MAX_BUFFER];
@@ -74,7 +73,7 @@ SocketStream::readStream(size_t num, void* pBytes)
 		{
 			if (errno == EINTR)
 				continue;
-			LOGD("pselect : %s", strerror(errno));
+			PG_LOGD("pselect : %s", strerror(errno));
 			return -1;
 		}
 		//This means pselect got timedout
@@ -89,11 +88,11 @@ SocketStream::readStream(size_t num, void* pBytes)
 			{
 				if(errno == ECONNRESET || errno == ENOTCONN || errno == ETIMEDOUT)
 				{
-					LOGI("Connection closed : %s", strerror(errno));
+					PG_LOGI("Connection closed : %s", strerror(errno));
 					return -1;
 				}
 				else if (errno != EAGAIN && errno != EWOULDBLOCK){
-					LOGI("read()");
+					PG_LOGI("read()");
 					return -1;
 				}
 			}
@@ -106,7 +105,7 @@ SocketStream::readStream(size_t num, void* pBytes)
 
 	}
 	memcpy(pBytes, wholeBuffer.c_str(), num);
-	
+
 	return 0;
 }
 
@@ -114,9 +113,9 @@ int
 SocketStream::writeStream(size_t num, const void* pBytes)
 {
 	TryReturn(pBytes != NULL, -1, , "Null pointer to buffer");
-	
+
 	m_bytesWrote += num;
-	
+
 	TryReturn(m_bytesRead <= MAX_BUFFER, -1, , "Too big buffer requested!");
 
 	fd_set wset, allset;
@@ -145,7 +144,7 @@ SocketStream::writeStream(size_t num, const void* pBytes)
 		{
 			if(errno == EINTR)
 				continue;
-			LOGD("pselect : %s", strerror(errno));
+			PG_LOGD("pselect : %s", strerror(errno));
 			return -1;
 		}
 
@@ -155,13 +154,13 @@ SocketStream::writeStream(size_t num, const void* pBytes)
 			{
 				if(errno == ECONNRESET || errno == EPIPE)
 				{
-					LOGI("Connection closed : %s", strerror(errno));
+					PG_LOGI("Connection closed : %s", strerror(errno));
 					return -1;
 
 				}
 				else if(errno != EAGAIN && errno != EWOULDBLOCK)
 				{
-					LOGE("write()");
+					PG_LOGE("write()");
 					return -1;
 				}
 			}

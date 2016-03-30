@@ -60,13 +60,13 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 		if (xmlStrcmp(curPtr->name, _NODE_PRIVILEGE) == 0)
 		{
 			xmlChar* pPrivilege = xmlNodeListGetString(docPtr, curPtr->xmlChildrenNode, 1);
-            
+
 			if (pPrivilege == NULL)
 			{
 				LOGE("Failed to get value");
 				return -EINVAL;
 			}
-            else 
+            else
 			{
 				privilegeList.push_back(std::string( reinterpret_cast<char*> (pPrivilege)));
 			}
@@ -96,7 +96,7 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 	int monitor_policy = 1;
 
 	if (user_id < 0 || packageId == NULL)
-		return PRIV_FLTR_ERROR_INVALID_PARAMETER;
+		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
 
 	PrivacyGuardClient *pInst = PrivacyGuardClient::getInstance();
 	std::list < std::string > privilege_List;
@@ -110,7 +110,7 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 
 	destroy_char_list(ppPrivilegeList, privilegeList.size() + 1);
 
-	if (ret != PRIV_FLTR_ERROR_SUCCESS)
+	if (ret != PRIV_GUARD_ERROR_SUCCESS)
 	{
 		LOGD("Failed to install monitor policy: %d", ret);
 		return -EINVAL;
@@ -124,19 +124,19 @@ __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_UNINSTALL(xmlDocPtr docPtr, const char* packageId)
 {
 	if (packageId == NULL)
-		return PRIV_FLTR_ERROR_INVALID_PARAMETER;
+		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
 
 	PrivacyGuardClient *pInst = PrivacyGuardClient::getInstance();
-	
+
 	int res = pInst->PgDeleteLogsByPackageId(std::string(packageId));
-	if (res != PRIV_FLTR_ERROR_SUCCESS)
+	if (res != PRIV_GUARD_ERROR_SUCCESS)
 	{
 		LOGD("Failed to delete logs");
 		return 0;
 	}
 
 	res = pInst->PgDeleteMonitorPolicyByPackageId(std::string(packageId));
-	if (res != PRIV_FLTR_ERROR_SUCCESS)
+	if (res != PRIV_GUARD_ERROR_SUCCESS)
 	{
 		LOGD("Failed to delete monitor policy");
 	}
@@ -149,7 +149,7 @@ __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_UPGRADE(xmlDocPtr docPtr, const char* packageId)
 {
 	int res = 0;
-    
+
     LOGD("Update privacy Info");
 
 	res = PKGMGR_PARSER_PLUGIN_UNINSTALL(docPtr, packageId);

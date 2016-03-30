@@ -43,13 +43,13 @@ int
 NotificationServer::initialize(void)
 {
 	if (m_initialized)
-		return PRIV_FLTR_ERROR_SUCCESS;
-	
+		return PRIV_GUARD_ERROR_SUCCESS;
+
 	DBusError error;
 	dbus_error_init(&error);
 
 	m_pDBusConnection = dbus_bus_get_private(DBUS_BUS_SYSTEM, &error);
-	TryReturn(m_pDBusConnection != NULL, PRIV_FLTR_ERROR_SYSTEM_ERROR, dbus_error_free(&error), "dbus_bus_get_private : %s", error.message);
+	TryReturn(m_pDBusConnection != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, dbus_error_free(&error), "dbus_bus_get_private : %s", error.message);
 
 	dbus_connection_setup_with_g_main(m_pDBusConnection, NULL);
 	std::unique_ptr < char[] > pRule(new char[MAX_LOCAL_BUF_SIZE]);
@@ -57,62 +57,62 @@ NotificationServer::initialize(void)
 	snprintf(pRule.get(), MAX_LOCAL_BUF_SIZE, "path='%s',type='signal',interface='%s'", DBUS_PATH.c_str(), DBUS_SIGNAL_INTERFACE.c_str());
 
 	dbus_bus_add_match(m_pDBusConnection, pRule.get(), &error);
-	TryReturn(!dbus_error_is_set(&error), PRIV_FLTR_ERROR_SYSTEM_ERROR, dbus_error_free(&error), "dbus_bus_add_match : %s", error.message);
+	TryReturn(!dbus_error_is_set(&error), PRIV_GUARD_ERROR_SYSTEM_ERROR, dbus_error_free(&error), "dbus_bus_add_match : %s", error.message);
 
 	m_initialized = true;
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
 NotificationServer::notifySettingChanged(const std::string pkgId, const std::string privacyId)
 {
 	if (!m_initialized)
-		return PRIV_FLTR_ERROR_INVALID_STATE;
+		return PRIV_GUARD_ERROR_INVALID_STATE;
 
 	char* pPkgId = const_cast <char*> (pkgId.c_str());
 	char* pPrivacyId = const_cast <char*> (privacyId.c_str());
 
 	DBusMessage* pMessage = dbus_message_new_signal(DBUS_PATH.c_str(), DBUS_SIGNAL_INTERFACE.c_str(), DBUS_SIGNAL_SETTING_CHANGED.c_str());
-	TryReturn(pMessage != NULL, PRIV_FLTR_ERROR_IPC_ERROR, , "dbus_message_new_signal");
+	TryReturn(pMessage != NULL, PRIV_GUARD_ERROR_IPC_ERROR, , "dbus_message_new_signal");
 
 	dbus_bool_t r;
 	r = dbus_message_append_args(pMessage,
 		DBUS_TYPE_STRING, &pPkgId,
 		DBUS_TYPE_STRING, &pPrivacyId,
 		DBUS_TYPE_INVALID);
-	TryReturn(r, PRIV_FLTR_ERROR_IPC_ERROR, , "dbus_message_append_args");
+	TryReturn(r, PRIV_GUARD_ERROR_IPC_ERROR, , "dbus_message_append_args");
 
 	r = dbus_connection_send(m_pDBusConnection, pMessage, NULL);
-	TryReturn(r, PRIV_FLTR_ERROR_IPC_ERROR, dbus_message_unref(pMessage);, "dbus_connection_send");
+	TryReturn(r, PRIV_GUARD_ERROR_IPC_ERROR, dbus_message_unref(pMessage);, "dbus_connection_send");
 
 	dbus_connection_flush(m_pDBusConnection);
 	dbus_message_unref(pMessage);
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
 NotificationServer::notifyPkgRemoved(const std::string pkgId)
 {
 	if (!m_initialized)
-		return PRIV_FLTR_ERROR_INVALID_STATE;
+		return PRIV_GUARD_ERROR_INVALID_STATE;
 
 	char* pPkgId = const_cast <char*> (pkgId.c_str());
 
 	DBusMessage* pMessage = dbus_message_new_signal(DBUS_PATH.c_str(), DBUS_SIGNAL_INTERFACE.c_str(), DBUS_SIGNAL_PKG_REMOVED.c_str());
-	TryReturn(pMessage != NULL, PRIV_FLTR_ERROR_IPC_ERROR, , "dbus_message_new_signal");
+	TryReturn(pMessage != NULL, PRIV_GUARD_ERROR_IPC_ERROR, , "dbus_message_new_signal");
 
 	dbus_bool_t r;
 	r = dbus_message_append_args(pMessage,
 		DBUS_TYPE_STRING, &pPkgId,
 		DBUS_TYPE_INVALID);
-	TryReturn(r, PRIV_FLTR_ERROR_IPC_ERROR, , "dbus_message_append_args");
+	TryReturn(r, PRIV_GUARD_ERROR_IPC_ERROR, , "dbus_message_append_args");
 
 	r = dbus_connection_send(m_pDBusConnection, pMessage, NULL);
-	TryReturn(r, PRIV_FLTR_ERROR_IPC_ERROR, dbus_message_unref(pMessage);, "dbus_connection_send");
+	TryReturn(r, PRIV_GUARD_ERROR_IPC_ERROR, dbus_message_unref(pMessage);, "dbus_connection_send");
 
 	dbus_connection_flush(m_pDBusConnection);
 	dbus_message_unref(pMessage);
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }

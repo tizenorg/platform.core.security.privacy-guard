@@ -19,7 +19,6 @@
 
 #include <memory>
 #include <string>
-#include <dlog.h>
 #include "SocketConnection.h"
 
 /* IMPORTANT:
@@ -61,34 +60,34 @@ public:
 
 	int call(std::string methodName)
 	{
-		PF_LOGI("call m_interfaceName : %s, methodName : %s", m_interfaceName.c_str(), methodName.c_str());
+		PG_LOGI("call m_interfaceName : %s, methodName : %s", m_interfaceName.c_str(), methodName.c_str());
 
 		int res = make_call(m_interfaceName);
-		PF_LOGI("call make_call interface res : %d", res);
-		TryReturn(res == PRIV_FLTR_ERROR_SUCCESS, res, , "make_call : %d", res);
+		PG_LOGI("call make_call interface res : %d", res);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "make_call : %d", res);
 
 		res = make_call(methodName);
-		PF_LOGI("call make_call method res : %d", res);
-		TryReturn(res == PRIV_FLTR_ERROR_SUCCESS, res, , "make_call : %d", res);
+		PG_LOGI("call make_call method res : %d", res);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "make_call : %d", res);
 
-		return PRIV_FLTR_ERROR_SUCCESS;
+		return PRIV_GUARD_ERROR_SUCCESS;
 	}
 
 	template<typename ...Args>
 	int call(std::string methodName, const Args&... args)
 	{
-		PF_LOGI("call Args m_interfaceName : %s, methodName : %s", m_interfaceName.c_str(), methodName.c_str());
+		PG_LOGI("call Args m_interfaceName : %s, methodName : %s", m_interfaceName.c_str(), methodName.c_str());
 		int res = make_call(m_interfaceName);
-		PF_LOGI("call Args make_call interface res : %d", res);
-		TryReturn(res == PRIV_FLTR_ERROR_SUCCESS, res, , "make_call : %d", res);
+		PG_LOGI("call Args make_call interface res : %d", res);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "make_call : %d", res);
 		res = make_call(methodName);
-		PF_LOGI("call Args make_call method res : %d", res);
-		TryReturn(res == PRIV_FLTR_ERROR_SUCCESS, res, , "make_call : %d", res);
+		PG_LOGI("call Args make_call method res : %d", res);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "make_call : %d", res);
 		res = make_call(args...);
-		PF_LOGI("call Args make_call args res : %d", res);
-		TryReturn(res == PRIV_FLTR_ERROR_SUCCESS, res, , "make_call : %d", res);
+		PG_LOGI("call Args make_call args res : %d", res);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "make_call : %d", res);
 
-		return PRIV_FLTR_ERROR_SUCCESS;
+		return PRIV_GUARD_ERROR_SUCCESS;
 	}
 
 	template<typename T>
@@ -101,11 +100,11 @@ private:
 	int make_call(const T& invalue, const Args&... args)
 	{
 		int res = make_call(invalue);
-		TryReturn(res == PRIV_FLTR_ERROR_SUCCESS, res, , "make_call : %d", res);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "make_call : %d", res);
 		res = make_call(args...);
-		TryReturn(res == PRIV_FLTR_ERROR_SUCCESS, res, , "make_call : %d", res);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "make_call : %d", res);
 
-		return PRIV_FLTR_ERROR_SUCCESS;
+		return PRIV_GUARD_ERROR_SUCCESS;
 	}
 
 	template<typename T>
@@ -118,11 +117,11 @@ private:
 	int make_call(const T* invalue, const Args&... args)
 	{
 		int res = make_call(invalue);
-		TryReturn(res == PRIV_FLTR_ERROR_SUCCESS, res, , "make_call : %d", res);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "make_call : %d", res);
 		res = make_call(args...);
-		TryReturn(res == PRIV_FLTR_ERROR_SUCCESS, res, , "make_call : %d", res);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "make_call : %d", res);
 
-		return PRIV_FLTR_ERROR_SUCCESS;
+		return PRIV_GUARD_ERROR_SUCCESS;
 	}
 
 	template<typename T>
@@ -135,11 +134,11 @@ private:
 	int make_call(T * outvalue, const Args&... args)
 	{
 		int res = make_call(outvalue);
-		TryReturn(res == PRIV_FLTR_ERROR_SUCCESS, res, , "make_call : %d", res);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "make_call : %d", res);
 		res = make_call(args...);
-		TryReturn(res == PRIV_FLTR_ERROR_SUCCESS, res, , "make_call : %d", res);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "make_call : %d", res);
 
-		return PRIV_FLTR_ERROR_SUCCESS;
+		return PRIV_GUARD_ERROR_SUCCESS;
 	}
 
 	template<typename T>

@@ -31,27 +31,27 @@
 
 #if defined(_PRIVACY_GUARD_DEBUG) || defined(_PRIVACY_GUARD_DEBUG_INFO) || defined(_PRIVACY_GUARD_DEBUG_ERROR)
 #ifdef _PRIVACY_GUARD_DEBUG
-#define PF_LOGD(fmt, arg...)	LOGD(fmt, ##arg)
-#define PF_LOGI(fmt, arg...)	LOGI(fmt, ##arg)
-#define PF_LOGE(fmt, arg...)	LOGE(fmt, ##arg)
+#define PG_LOGD(fmt, arg...)	LOGD(fmt, ##arg)
+#define PG_LOGI(fmt, arg...)	LOGI(fmt, ##arg)
+#define PG_LOGE(fmt, arg...)	LOGE(fmt, ##arg)
 
 // _PRIVACY_GUARD_DEBUG_INFO
 #elif _PRIVACY_GUARD_DEBUG_INFO
-#define PF_LOGD(fmt, arg...)
-#define PF_LOGI(fmt, arg...)	LOGI(fmt, ##arg)
-#define PF_LOGE(fmt, arg...)	LOGE(fmt, ##arg)
+#define PG_LOGD(fmt, arg...)
+#define PG_LOGI(fmt, arg...)	LOGI(fmt, ##arg)
+#define PG_LOGE(fmt, arg...)	LOGE(fmt, ##arg)
 
 // _PRIVACY_GUARD_DEBUG_ERROR
 #elif _PRIVACY_GUARD_DEBUG_ERROR
-#define PF_LOGD(fmt, arg...)
-#define PF_LOGI(fmt, arg...)
-#define PF_LOGE(fmt, arg...)	LOGE(fmt, ##arg)
+#define PG_LOGD(fmt, arg...)
+#define PG_LOGI(fmt, arg...)
+#define PG_LOGE(fmt, arg...)	LOGE(fmt, ##arg)
 #endif
 
 #else
-#define PF_LOGD(fmt, arg...)
-#define PF_LOGI(fmt, arg...)
-#define PF_LOGE(fmt, arg...)
+#define PG_LOGD(fmt, arg...)
+#define PG_LOGI(fmt, arg...)
+#define PG_LOGE(fmt, arg...)
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@
 
 #define IF_MATCH_RET_ERROR(condition, msgFormat, error)	\
 	if (condition) { \
-		PF_LOGE(msgFormat, error); \
+		PG_LOGE(msgFormat, error); \
 		return error; \
 	} else {;}
 #define	TryCatchLogReturn(condition, expr, r, logFormat)	if (!(condition)) { \
@@ -98,7 +98,7 @@ auto DbDeleter = [&](sqlite3* pPtr) { /*sqlite3_close(pPtr);*/ db_util_close(pPt
 	{\
 		/*int res = sqlite3_open_v2(dbpath, &pHandler##Temp, mode , NULL);*/\
 		int res = db_util_open_with_options(dbpath, &pHandler##Temp, mode, NULL);\
-		TryCatchResLogReturn(res == SQLITE_OK, , PRIV_FLTR_ERROR_DB_ERROR, "db_util_open_with_options : %d", res);\
+		TryCatchResLogReturn(res == SQLITE_OK, , PRIV_GUARD_ERROR_DB_ERROR, "db_util_open_with_options : %d", res);\
 	}\
 	setDbToUniquePtr(pHandler, pHandler##Temp);\
 
@@ -120,7 +120,7 @@ static const int SLEEP_TIME = 50000;
 				usleep(SLEEP_TIME);\
 			}\
 		}\
-		TryCatchResLogReturn(res == SQLITE_OK, , PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);\
+		TryCatchResLogReturn(res == SQLITE_OK, , PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);\
 	}\
 	setStmtToUniquePtr(pStmt, pStmt##Temp);
 

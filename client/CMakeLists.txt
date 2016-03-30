@@ -49,7 +49,7 @@ ENDIF(PRIVACY_POPUP)
 ###################################################################################################
 ## for libprivacy-guard-client (executable)
 INCLUDE_DIRECTORIES(${pkgs_INCLUDE_DIRS} ${client_include_dir} ${common_include_dir} ${extern_include_dir})
-SET(PRIVACY_GUARD_CLIENT_SOURCES 
+SET(PRIVACY_GUARD_CLIENT_SOURCES
 	${common_src_dir}/SocketConnection.cpp
 	${common_src_dir}/SocketStream.cpp
 	${common_src_dir}/PrivacyIdInfo.cpp

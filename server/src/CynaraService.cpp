@@ -21,7 +21,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <memory>
-#include <dlog.h>
 #include <thread>
 #include <cynara-monitor.h>
 #include "PrivacyGuardTypes.h"
@@ -48,62 +47,62 @@ CynaraService::~CynaraService(void)
 int
 CynaraService::initialize(void)
 {
-	LOGI("CynaraService initializing");
+	PG_LOGI("CynaraService initializing");
 
 	int res = cynara_monitor_configuration_create(&p_conf);
 	if(res != CYNARA_API_SUCCESS){
-		LOGE("cynara_monitor_configuration_create FAIL");
-		return PRIV_FLTR_ERROR_SYSTEM_ERROR;
+		PG_LOGE("cynara_monitor_configuration_create FAIL");
+		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 //	cynara_monitor_configuration_set_buffer_size(p_conf, buffer_size);
 //	res = cynara_monitor_initialize(&p_cynara_monitor, p_conf);
 	res = cynara_monitor_initialize(&p_cynara_monitor, nullptr);
 	if(res != CYNARA_API_SUCCESS){
-		LOGE("cynara_monitor_initialize FAIL");
-		return PRIV_FLTR_ERROR_SYSTEM_ERROR;
+		PG_LOGE("cynara_monitor_initialize FAIL");
+		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 
 //	cynara_monitor_configuration_set_filter
 
-	LOGI("CynaraService initialized");
+	PG_LOGI("CynaraService initialized");
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
 CynaraService::start(void)
 {
-	LOGI("CynaraService starting");
+	PG_LOGI("CynaraService starting");
 
 	int res = 0;
 
 	sigset_t sigset;
 	sigemptyset(&sigset);
 	res = pthread_sigmask(SIG_BLOCK, &sigset, NULL);
-	TryReturn( res >= 0, PRIV_FLTR_ERROR_SYSTEM_ERROR, , "pthread_sigmask : %s", strerror(errno));
+	TryReturn( res >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "pthread_sigmask : %s", strerror(errno));
 
 	pthread_t cynaraThread;
 	res = pthread_create(&cynaraThread, NULL, &getEntriesThread, this);
-	TryReturn( res >= 0, PRIV_FLTR_ERROR_SYSTEM_ERROR, errno = res, "pthread_create : %s", strerror(res));
+	TryReturn( res >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, errno = res, "pthread_create : %s", strerror(res));
 
 	m_cynaraThread = cynaraThread;
 
-	LOGI("CynaraService started");
+	PG_LOGI("CynaraService started");
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 void*
 CynaraService::getEntriesThread(void* pData)
 {
 	pthread_detach(pthread_self());
-	LOGI("Running get entries thread");
+	PG_LOGI("Running get entries thread");
 
 	pthread_t testThread;
 	int result = pthread_create(&testThread, NULL, &flushThread, NULL);
 	if(result){
-		LOGE("pthread_create FAIL");
-		return (void*) PRIV_FLTR_ERROR_SYSTEM_ERROR;
+		PG_LOGE("pthread_create FAIL");
+		return (void*) PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 
 //	while(1)
@@ -111,13 +110,13 @@ CynaraService::getEntriesThread(void* pData)
 		// cynara_monitor_entries_get
 		int res = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
 		if(res != CYNARA_API_SUCCESS){
-			LOGE("cynara_monitor_entries_get FAIL");
-			return (void*) PRIV_FLTR_ERROR_SYSTEM_ERROR;
+			PG_LOGE("cynara_monitor_entries_get FAIL");
+			return (void*) PRIV_GUARD_ERROR_SYSTEM_ERROR;
 		}
 
 		res = CynaraService::updateDb(monitor_entries);
-		if(res != PRIV_FLTR_ERROR_SUCCESS){
-			LOGE("updateDb FAIL");
+		if(res != PRIV_GUARD_ERROR_SUCCESS){
+			PG_LOGE("updateDb FAIL");
 			return (void*) res;
 		}
 //	}
@@ -131,21 +130,21 @@ CynaraService::getEntriesThread(void* pData)
 
 void*
 CynaraService::flushThread(void* pData)
-	{
+{
 	pthread_detach(pthread_self());
-	LOGI("Running get flush thread");
+	PG_LOGI("Running get flush thread");
 
 	for(int i = 0; i < 1000000000;i++);
-	
+
 	int ret= cynara_monitor_entries_flush(p_cynara_monitor);
 	if(ret != CYNARA_API_SUCCESS){
-		LOGE("cynara_monitor_entries_flush FAIL");
-		return (void*) PRIV_FLTR_ERROR_SYSTEM_ERROR;
+		PG_LOGE("cynara_monitor_entries_flush FAIL");
+		return (void*) PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 	else{
-		LOGI("cynara_monitor_entries_flush SUCCESS");	
+		PG_LOGI("cynara_monitor_entries_flush SUCCESS");
 	}
-	
+
 	return (void*) 0;
 }
 
@@ -154,7 +153,7 @@ CynaraService::updateDb(cynara_monitor_entry** monitor_entries)
 {
 	cynara_monitor_entry **entryIter = monitor_entries;
 
-	LOGI("entryIter = %x", entryIter);
+	PG_LOGI("entryIter = %x", entryIter);
 
 // DB update
 		int userId = 0;
@@ -169,40 +168,40 @@ CynaraService::updateDb(cynara_monitor_entry** monitor_entries)
 		timestamp = cynara_monitor_entry_get_timestamp(*entryIter);
 
 		int ret = PrivacyGuardDb::getInstance()->PgAddPrivacyAccessLogForCynara(userId, packageId, privilege, timestamp);
-		if(ret != PRIV_FLTR_ERROR_SUCCESS){
-			LOGE("PgAddPrivacyAccessLogForCynara FAIL");
+		if(ret != PRIV_GUARD_ERROR_SUCCESS){
+			PG_LOGE("PgAddPrivacyAccessLogForCynara FAIL");
 		}
 		else{
-			LOGI("PgAddPrivacyAccessLogForCynara SUCCESS");
+			PG_LOGI("PgAddPrivacyAccessLogForCynara SUCCESS");
 		}
 
 		++entryIter;
 	}
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 
 int
 CynaraService::stop(void)
 {
-	LOGI("Stopping");
+	PG_LOGI("Stopping");
 
 	int returned_value;
 	if((returned_value = pthread_kill(m_cynaraThread, m_signalToClose)) < 0)
 	{
 		errno = returned_value;
-		LOGE("pthread_kill() : %s", strerror(errno));
-		return PRIV_FLTR_ERROR_IPC_ERROR;
+		PG_LOGE("pthread_kill() : %s", strerror(errno));
+		return PRIV_GUARD_ERROR_IPC_ERROR;
 	}
-	pthread_join(m_cynaraThread, NULL);	
+	pthread_join(m_cynaraThread, NULL);
 
-	LOGI("Stopped");
-	return PRIV_FLTR_ERROR_SUCCESS;
+	PG_LOGI("Stopped");
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
 CynaraService::shutdown(void)
 {
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }

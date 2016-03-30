@@ -16,7 +16,6 @@
 
 #include <sstream>
 #include <fstream>
-#include <dlog.h>
 #include <sqlite3.h>
 #include <pkgmgr-info.h>
 #include <time.h>
@@ -59,12 +58,12 @@ PrivacyGuardDb::openSqliteDB(void)
 	int res = -1;
 	res = sqlite3_open_v2(PRIVACY_DB_PATH, &m_sqlHandler, SQLITE_OPEN_READWRITE, NULL);
 	if(res == SQLITE_OK)	{
-		PF_LOGI("monitor db is opened successfully");
+		PG_LOGI("monitor db is opened successfully");
 //		sqlite3_wal_autocheckpoint(m_sqlHandler, 1);
 		m_bDBOpen = true;
 	}
 	else {
-		PF_LOGE("fail : monitor db open(%d)", res);
+		PG_LOGE("fail : monitor db open(%d)", res);
 	}
 }
 
@@ -76,7 +75,7 @@ PrivacyGuardDb::PgAddPrivacyAccessLog(const int userId, std::list < std::pair < 
 	localtime(&current_date);
 
 	if(current_date <= 0) {
-		return PRIV_FLTR_ERROR_INVALID_PARAMETER;
+		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
 	}
 
 	int res = -1;
@@ -88,45 +87,45 @@ PrivacyGuardDb::PgAddPrivacyAccessLog(const int userId, std::list < std::pair < 
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
-	PF_LOGD("addlogToDb m_sqlHandler : %p", m_sqlHandler);
+	PG_LOGD("addlogToDb m_sqlHandler : %p", m_sqlHandler);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, QUERY_INSERT.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	for (std::list <std::pair <std::string, std::string>>::iterator iter = logInfoList.begin(); iter != logInfoList.end(); ++iter) {
-		PF_LOGD("packageID : %s, PrivacyID : %s", iter->first.c_str(), iter->second.c_str());
+		PG_LOGD("packageID : %s, PrivacyID : %s", iter->first.c_str(), iter->second.c_str());
 
 		// bind
 		res = sqlite3_bind_int(m_stmt, 1, userId);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		res = sqlite3_bind_text(m_stmt, 2, iter->first.c_str(), -1, SQLITE_TRANSIENT);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 		res = sqlite3_bind_text(m_stmt, 3, iter->second.c_str(), -1, SQLITE_TRANSIENT);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 		res = sqlite3_bind_int(m_stmt, 4, current_date);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		res = sqlite3_step(m_stmt);
-		TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_step : %d", res);
+		TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
 
 		sqlite3_reset(m_stmt);
 	}
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
 PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::string packageId, const std::string privilege, const timespec* timestamp)
 {
 	if(timestamp->tv_sec <= 0) {
-		return PRIV_FLTR_ERROR_INVALID_PARAMETER;
+		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
 	}
 
 	int res = SQLITE_OK;
@@ -134,10 +133,10 @@ PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::stri
 	// change from privilege to privacy
 	std::string privacyId;
 	res = PrivacyIdInfo::getPrivacyIdFromPrivilege(privilege, privacyId);
-	if (res == PRIV_FLTR_ERROR_NO_DATA) {
-		return PRIV_FLTR_ERROR_SUCCESS;
+	if (res == PRIV_GUARD_ERROR_NO_DATA) {
+		return PRIV_GUARD_ERROR_SUCCESS;
 	}
-	TryReturn( res == PRIV_FLTR_ERROR_SUCCESS, res, , "getPrivacyIdFromPrivilege : %d", res);	
+	TryReturn( res == PRIV_GUARD_ERROR_SUCCESS, res, , "getPrivacyIdFromPrivilege : %d", res);
 
 	// change from timespec to time_t
 	time_t logging_date;
@@ -150,35 +149,35 @@ PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::stri
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
-	PF_LOGD("addlogToDb m_sqlHandler : %p", m_sqlHandler);
+	PG_LOGD("addlogToDb m_sqlHandler : %p", m_sqlHandler);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, QUERY_INSERT.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// bind
 	res = sqlite3_bind_int(m_stmt, 1, userId);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_bind_text(m_stmt, 2, packageId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 	res = sqlite3_bind_text(m_stmt, 3, privacyId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 	res = sqlite3_bind_int(m_stmt, 4, logging_date);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_step(m_stmt);
-	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_step : %d", res);
+	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
 
 	sqlite3_reset(m_stmt);
 
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -189,7 +188,7 @@ PrivacyGuardDb::PgAddPrivacyAccessLogTest(const int userId, const std::string pa
 	localtime(&current_date);
 
 	if(current_date <= 0) {
-		return PRIV_FLTR_ERROR_INVALID_PARAMETER;
+		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
 	}
 
 	int res = SQLITE_OK;
@@ -201,35 +200,35 @@ PrivacyGuardDb::PgAddPrivacyAccessLogTest(const int userId, const std::string pa
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
-	PF_LOGD("addlogToDb m_sqlHandler : %p", m_sqlHandler);
+	PG_LOGD("addlogToDb m_sqlHandler : %p", m_sqlHandler);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, QUERY_INSERT.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// bind
 	res = sqlite3_bind_int(m_stmt, 1, userId);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_bind_text(m_stmt, 2, packageId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 	res = sqlite3_bind_text(m_stmt, 3, privacyId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 	res = sqlite3_bind_int(m_stmt, 4, current_date);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_step(m_stmt);
-	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_step : %d", res);
+	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
 
 	sqlite3_reset(m_stmt);
 
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 
@@ -245,38 +244,38 @@ PrivacyGuardDb::PgAddMonitorPolicy(const int userId, const std::string packageId
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
-	PF_LOGD("addlogToDb m_sqlHandler : %p", m_sqlHandler);
+	PG_LOGD("addlogToDb m_sqlHandler : %p", m_sqlHandler);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, QUERY_INSERT.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	for (std::list <std::string>::const_iterator iter = privacyList.begin(); iter != privacyList.end(); ++iter) {
-		PF_LOGD("PrivacyID : %s", iter->c_str());
+		PG_LOGD("PrivacyID : %s", iter->c_str());
 
 		// bind
 		res = sqlite3_bind_int(m_stmt, 1, userId);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		res = sqlite3_bind_text(m_stmt, 2, packageId.c_str(), -1, SQLITE_TRANSIENT);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 		res = sqlite3_bind_text(m_stmt, 3, iter->c_str(), -1, SQLITE_TRANSIENT);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 		res = sqlite3_bind_int(m_stmt, 4, monitorPolicy);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		res = sqlite3_step(m_stmt);
-		TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_step : %d", res);
+		TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
 
 		sqlite3_reset(m_stmt);
 	}
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -290,18 +289,18 @@ PrivacyGuardDb::PgCheckPrivacyPackage(const int userId, const std::string packag
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, query.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn( res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn( res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// bind
 	res = sqlite3_bind_int(m_stmt, 1, userId);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_bind_text(m_stmt, 2, packageId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 	int count = -1;
 
@@ -318,13 +317,13 @@ PrivacyGuardDb::PgCheckPrivacyPackage(const int userId, const std::string packag
 		isPrivacyPackage = false;
 	}
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
 PrivacyGuardDb::PgDeleteAllLogsAndMonitorPolicy(void)
 {
-	PF_LOGD("PgDeleteAllLogsAndMonitorPolicy");
+	PG_LOGD("PgDeleteAllLogsAndMonitorPolicy");
 
 	int res = -1;
 
@@ -337,37 +336,37 @@ PrivacyGuardDb::PgDeleteAllLogsAndMonitorPolicy(void)
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, LOG_DELETE.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	res = sqlite3_step(m_stmt);
-	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_step : %d", res);
+	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
 
 	res = sqlite3_prepare_v2(m_sqlHandler, POLICY_DELETE.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	res = sqlite3_step(m_stmt);
-	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_step : %d", res);
+	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
 
 	res = sqlite3_prepare_v2(m_sqlHandler, MAIN_POLICY_DELETE.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	res = sqlite3_step(m_stmt);
-	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_step : %d", res);
+	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
 
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 
 int
 PrivacyGuardDb::PgDeleteLogsByPackageId(const std::string packageId)
 {
-	PF_LOGD("PrivacyGuardDb::PgDeleteLogsByPackageId packageid : %s", packageId.c_str());
+	PG_LOGD("PrivacyGuardDb::PgDeleteLogsByPackageId packageid : %s", packageId.c_str());
 
 	int res = -1;
 
@@ -378,29 +377,29 @@ PrivacyGuardDb::PgDeleteLogsByPackageId(const std::string packageId)
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, QUERY_DELETE.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// bind
 	res = sqlite3_bind_text(m_stmt, 1, packageId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 	// step
 	res = sqlite3_step(m_stmt);
-	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_step : %d", res);
+	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
 
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
 PrivacyGuardDb::PgDeleteMonitorPolicyByPackageId(const std::string packageId)
 {
-	PF_LOGD("PrivacyGuardDb::PgDeleteMonitorPolicyByPackageId packageid : %s", packageId.c_str());
+	PG_LOGD("PrivacyGuardDb::PgDeleteMonitorPolicyByPackageId packageid : %s", packageId.c_str());
 
 	int res = -1;
 
@@ -411,23 +410,23 @@ PrivacyGuardDb::PgDeleteMonitorPolicyByPackageId(const std::string packageId)
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, QUERY_DELETE.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// bind
 	res = sqlite3_bind_text(m_stmt, 1, packageId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 	// step
 	res = sqlite3_step(m_stmt);
-	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_step : %d", res);
+	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
 
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -440,21 +439,21 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPackage(const int userId, const int 
 	// [CYNARA] Fluch Entries
 	int ret= cynara_monitor_entries_flush(p_cynara_monitor);
 	if(ret != CYNARA_API_SUCCESS){
-		LOGE("cynara_monitor_entries_flush FAIL");
-		return PRIV_FLTR_ERROR_SYSTEM_ERROR;
+		PG_LOGE("cynara_monitor_entries_flush FAIL");
+		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 
 	// [CYNARA] Get Entries
 	ret = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
 	if(ret != CYNARA_API_SUCCESS){
-		LOGE("cynara_monitor_entries_get FAIL");
-		return PRIV_FLTR_ERROR_SYSTEM_ERROR;
+		PG_LOGE("cynara_monitor_entries_get FAIL");
+		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 
-	// [CYNARA] Update DB	
+	// [CYNARA] Update DB
 	ret = CynaraService::updateDb(monitor_entries);
-	if(ret != PRIV_FLTR_ERROR_SUCCESS){
-		LOGE("updateDb FAIL");
+	if(ret != PRIV_GUARD_ERROR_SUCCESS){
+		PG_LOGE("updateDb FAIL");
 		return ret;
 	}
 #endif
@@ -468,20 +467,20 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPackage(const int userId, const int 
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, PKGID_SELECT.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	res = sqlite3_bind_int(m_stmt, 1, userId);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_bind_int(m_stmt, 2, startDate);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_bind_int(m_stmt, 3, endDate);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	while ((res = sqlite3_step(m_stmt)) == SQLITE_ROW) {
 		const char* packageId = reinterpret_cast < const char* > (sqlite3_column_text(m_stmt, 0));
@@ -489,19 +488,19 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPackage(const int userId, const int 
 
 		// prepare
 		res = sqlite3_prepare_v2(m_sqlHandler, PKGINFO_SELECT.c_str(), -1, &infoStmt, NULL);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 		res = sqlite3_bind_int(infoStmt, 1, userId);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		res = sqlite3_bind_text(infoStmt, 2, packageId, -1, SQLITE_TRANSIENT);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 		res = sqlite3_bind_int(infoStmt, 3, startDate);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		res = sqlite3_bind_int(infoStmt, 4, endDate);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		while ((res = sqlite3_step(infoStmt)) == SQLITE_ROW) {
 			int count = sqlite3_column_int(infoStmt, 0);
@@ -514,7 +513,7 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPackage(const int userId, const int 
 	}
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -527,21 +526,21 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPrivacy(const int userId, const int 
 	// [CYNARA] Fluch Entries
 	int ret= cynara_monitor_entries_flush(p_cynara_monitor);
 	if(ret != CYNARA_API_SUCCESS){
-		LOGE("cynara_monitor_entries_flush FAIL");
-		return PRIV_FLTR_ERROR_SYSTEM_ERROR;
+		PG_LOGE("cynara_monitor_entries_flush FAIL");
+		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 
 	// [CYNARA] Get Entries
 	ret = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
 	if(ret != CYNARA_API_SUCCESS){
-		LOGE("cynara_monitor_entries_get FAIL");
-		return PRIV_FLTR_ERROR_SYSTEM_ERROR;
+		PG_LOGE("cynara_monitor_entries_get FAIL");
+		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 
-	// [CYNARA] Update DB	
+	// [CYNARA] Update DB
 	ret = CynaraService::updateDb(monitor_entries);
-	if(ret != PRIV_FLTR_ERROR_SUCCESS){
-		LOGE("updateDb FAIL");
+	if(ret != PRIV_GUARD_ERROR_SUCCESS){
+		PG_LOGE("updateDb FAIL");
 		return ret;
 	}
 #endif
@@ -553,7 +552,7 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPrivacy(const int userId, const int 
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	int i;
 	int cnt_privacy = sizeof(privacy_list) / sizeof(privacy_list[0]);
@@ -561,20 +560,20 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPrivacy(const int userId, const int 
 	for (i = 0; i < cnt_privacy; i++) {
 		// prepare
 		res = sqlite3_prepare_v2(m_sqlHandler, PRIVACY_SELECT.c_str(), -1, &m_stmt, NULL);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 		// bind
 		res = sqlite3_bind_int(m_stmt, 1, userId);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		res = sqlite3_bind_text(m_stmt, 2, privacy_list[i], -1, SQLITE_TRANSIENT);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 		res = sqlite3_bind_int(m_stmt, 3, startDate);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		res = sqlite3_bind_int(m_stmt, 4, endDate);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		// step
 		if ((res = sqlite3_step(m_stmt)) == SQLITE_ROW) {
@@ -590,7 +589,7 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPrivacy(const int userId, const int 
 
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -603,21 +602,21 @@ PrivacyGuardDb::PgForeachPrivacyCountByPrivacyId(const int userId, const int sta
 	// [CYNARA] Fluch Entries
 	int ret= cynara_monitor_entries_flush(p_cynara_monitor);
 	if(ret != CYNARA_API_SUCCESS){
-		LOGE("cynara_monitor_entries_flush FAIL");
-		return PRIV_FLTR_ERROR_SYSTEM_ERROR;
+		PG_LOGE("cynara_monitor_entries_flush FAIL");
+		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 
 	// [CYNARA] Get Entries
 	ret = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
 	if(ret != CYNARA_API_SUCCESS){
-		LOGE("cynara_monitor_entries_get FAIL");
-		return PRIV_FLTR_ERROR_SYSTEM_ERROR;
+		PG_LOGE("cynara_monitor_entries_get FAIL");
+		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 
-	// [CYNARA] Update DB	
+	// [CYNARA] Update DB
 	ret = CynaraService::updateDb(monitor_entries);
-	if(ret != PRIV_FLTR_ERROR_SUCCESS){
-		LOGE("updateDb FAIL");
+	if(ret != PRIV_GUARD_ERROR_SUCCESS){
+		PG_LOGE("updateDb FAIL");
 		return ret;
 	}
 #endif
@@ -631,24 +630,24 @@ PrivacyGuardDb::PgForeachPrivacyCountByPrivacyId(const int userId, const int sta
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, PKGID_SELECT.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// bind
 	res = sqlite3_bind_int(m_stmt, 1, userId);
-	TryReturn(res == SQLITE_OK, PRIV_FLTR_ERROR_DB_ERROR, , "sqlite3_bind_int : %d", res);
+	TryReturn(res == SQLITE_OK, PRIV_GUARD_ERROR_DB_ERROR, , "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_bind_text(m_stmt, 2, privacyId.c_str(), -1, SQLITE_TRANSIENT);
-	TryReturn(res == SQLITE_OK, PRIV_FLTR_ERROR_DB_ERROR, , "sqlite3_bind_text : %d", res);
+	TryReturn(res == SQLITE_OK, PRIV_GUARD_ERROR_DB_ERROR, , "sqlite3_bind_text : %d", res);
 
 	res = sqlite3_bind_int(m_stmt, 3, startDate);
-	TryReturn(res == SQLITE_OK, PRIV_FLTR_ERROR_DB_ERROR, , "sqlite3_bind_int : %d", res);
+	TryReturn(res == SQLITE_OK, PRIV_GUARD_ERROR_DB_ERROR, , "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_bind_int(m_stmt, 4, endDate);
-	TryReturn(res == SQLITE_OK, PRIV_FLTR_ERROR_DB_ERROR, , "sqlite3_bind_int : %d", res);
+	TryReturn(res == SQLITE_OK, PRIV_GUARD_ERROR_DB_ERROR, , "sqlite3_bind_int : %d", res);
 
 	while ((res = sqlite3_step(m_stmt)) == SQLITE_ROW) {
 		const char* packageId =  reinterpret_cast < const char* > (sqlite3_column_text(m_stmt, 0));
@@ -656,23 +655,23 @@ PrivacyGuardDb::PgForeachPrivacyCountByPrivacyId(const int userId, const int sta
 
 		// prepare
 		res = sqlite3_prepare_v2(m_sqlHandler, PKGINFO_SELECT.c_str(), -1, &infoStmt, NULL);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 		// bind
 		res = sqlite3_bind_int(infoStmt, 1, userId);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		res = sqlite3_bind_text(infoStmt, 2, packageId, -1, SQLITE_TRANSIENT);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 		res = sqlite3_bind_text(infoStmt, 3, privacyId.c_str(), -1, SQLITE_TRANSIENT);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 		res = sqlite3_bind_int(infoStmt, 4, startDate);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		res = sqlite3_bind_int(infoStmt, 5, endDate);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		if ((res = sqlite3_step(infoStmt)) == SQLITE_ROW) {
 			int count = sqlite3_column_int(infoStmt, 0);
@@ -686,7 +685,7 @@ PrivacyGuardDb::PgForeachPrivacyCountByPrivacyId(const int userId, const int sta
 
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -699,21 +698,21 @@ PrivacyGuardDb::PgForeachPrivacyCountByPackageId(const int userId, const int sta
 	// [CYNARA] Fluch Entries
 	int ret= cynara_monitor_entries_flush(p_cynara_monitor);
 	if(ret != CYNARA_API_SUCCESS){
-		LOGE("cynara_monitor_entries_flush FAIL");
-		return PRIV_FLTR_ERROR_SYSTEM_ERROR;
+		PG_LOGE("cynara_monitor_entries_flush FAIL");
+		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 
 	// [CYNARA] Get Entries
 	ret = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
 	if(ret != CYNARA_API_SUCCESS){
-		LOGE("cynara_monitor_entries_get FAIL");
-		return PRIV_FLTR_ERROR_SYSTEM_ERROR;
+		PG_LOGE("cynara_monitor_entries_get FAIL");
+		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 
-	// [CYNARA] Update DB	
+	// [CYNARA] Update DB
 	ret = CynaraService::updateDb(monitor_entries);
-	if(ret != PRIV_FLTR_ERROR_SUCCESS){
-		LOGE("updateDb FAIL");
+	if(ret != PRIV_GUARD_ERROR_SUCCESS){
+		PG_LOGE("updateDb FAIL");
 		return ret;
 	}
 #endif
@@ -725,7 +724,7 @@ PrivacyGuardDb::PgForeachPrivacyCountByPackageId(const int userId, const int sta
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	int i;
 	int cnt_privacy = sizeof(privacy_list) / sizeof(privacy_list[0]);
@@ -733,23 +732,23 @@ PrivacyGuardDb::PgForeachPrivacyCountByPackageId(const int userId, const int sta
 	for (i = 0; i < cnt_privacy; i++) {
 		// prepare
 		res = sqlite3_prepare_v2(m_sqlHandler, PRIVACY_SELECT.c_str(), -1, &m_stmt, NULL);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 		//bind
 		res = sqlite3_bind_int(m_stmt, 1, userId);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		res = sqlite3_bind_text(m_stmt, 2, packageId.c_str(), -1, SQLITE_TRANSIENT);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 		res = sqlite3_bind_text(m_stmt, 3, privacy_list[i], -1, SQLITE_TRANSIENT);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 		res = sqlite3_bind_int(m_stmt, 4, startDate);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		res = sqlite3_bind_int(m_stmt, 5, endDate);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		if ((res = sqlite3_step(m_stmt)) == SQLITE_ROW) {
 			int count = sqlite3_column_int(m_stmt, 0);
@@ -764,7 +763,7 @@ PrivacyGuardDb::PgForeachPrivacyCountByPackageId(const int userId, const int sta
 
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -779,21 +778,21 @@ PrivacyGuardDb::PgGetMonitorPolicy(const int userId, const std::string packageId
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, query.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// bind
 	res = sqlite3_bind_int(m_stmt, 1, userId);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
-	
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+
 	res = sqlite3_bind_text(m_stmt, 2, packageId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 	res = sqlite3_bind_text(m_stmt, 3, privacyId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 	// step
 	monitorPolicy = 0;
@@ -802,7 +801,7 @@ PrivacyGuardDb::PgGetMonitorPolicy(const int userId, const std::string packageId
 	}
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -817,11 +816,11 @@ PrivacyGuardDb::PgGetAllMonitorPolicy(std::list < std::pair < std::string, int >
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, MONITOR_POLICY_SELECT.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// step
 	int monitorPolicy = 0;
@@ -841,10 +840,10 @@ PrivacyGuardDb::PgGetAllMonitorPolicy(std::list < std::pair < std::string, int >
 
 	m_dbMutex.unlock();
 	if(monitorPolicyList.size() > 0) {
-		res = PRIV_FLTR_ERROR_SUCCESS;
+		res = PRIV_GUARD_ERROR_SUCCESS;
 	}
 	else {
-		res = PRIV_FLTR_ERROR_NO_DATA;
+		res = PRIV_GUARD_ERROR_NO_DATA;
 	}
 
 	return res;
@@ -861,18 +860,18 @@ PrivacyGuardDb::PgForeachMonitorPolicyByPackageId(const int userId, const std::s
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, query.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock();, PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock();, PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// bind
 	res = sqlite3_bind_int(m_stmt, 1, userId);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_bind_text(m_stmt, 2, packageId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 	// step
 	while ((res = sqlite3_step(m_stmt)) == SQLITE_ROW) {
@@ -889,7 +888,7 @@ PrivacyGuardDb::PgForeachMonitorPolicyByPackageId(const int userId, const std::s
 	}
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -903,15 +902,15 @@ PrivacyGuardDb::PgForeachPrivacyPackageId(const int userId, std::list < std::str
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, query.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock();, PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock();, PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// bind
 	res = sqlite3_bind_int(m_stmt, 1, userId);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	// step
 	while ((res = sqlite3_step(m_stmt)) == SQLITE_ROW) {
@@ -923,7 +922,7 @@ PrivacyGuardDb::PgForeachPrivacyPackageId(const int userId, std::list < std::str
 	}
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -937,18 +936,18 @@ PrivacyGuardDb::PgForeachPackageByPrivacyId(const int userId, const std::string 
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, query.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock();, PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock();, PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// bind
 	res = sqlite3_bind_int(m_stmt, 1, userId);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_bind_text(m_stmt, 2, privacyId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 	// step
 	while ((res = sqlite3_step(m_stmt)) == SQLITE_ROW) {
@@ -960,7 +959,7 @@ PrivacyGuardDb::PgForeachPackageByPrivacyId(const int userId, const std::string 
 	}
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -974,32 +973,32 @@ PrivacyGuardDb::PgUpdateMonitorPolicy(const int userId, const std::string packag
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, query.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// bind
 	res = sqlite3_bind_int(m_stmt, 1, monitorPolicy);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_bind_int(m_stmt, 2, userId);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_bind_text(m_stmt, 3, packageId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 	res = sqlite3_bind_text(m_stmt, 4, privacyId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 	// step
 	res = sqlite3_step(m_stmt);
-	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_step : %d", res);
+	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
 
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -1014,25 +1013,25 @@ PrivacyGuardDb::PgAddMainMonitorPolicy(const int userId)
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
-	PF_LOGD("addlogToDb m_sqlHandler : %p", m_sqlHandler);
+	PG_LOGD("addlogToDb m_sqlHandler : %p", m_sqlHandler);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, QUERY_INSERT.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	//bind
 	res = sqlite3_bind_int(m_stmt, 1, userId);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	//step
 	res = sqlite3_step(m_stmt);
-	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_step : %d", res);
+	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
 
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -1046,22 +1045,22 @@ PrivacyGuardDb::PgUpdateMainMonitorPolicy(const int userId, const bool mainMonit
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, query.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// bind
 	res = sqlite3_bind_int(m_stmt, 1, mainMonitorPolicy);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_bind_int(m_stmt, 2, userId);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	// step
 	res = sqlite3_step(m_stmt);
-	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_step : %d", res);
+	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
 
 	m_dbMutex.unlock();
 
@@ -1070,7 +1069,7 @@ PrivacyGuardDb::PgUpdateMainMonitorPolicy(const int userId, const bool mainMonit
 	cynara_monitor_configuration_set_filter();
 #endif
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -1085,15 +1084,15 @@ PrivacyGuardDb::PgGetMainMonitorPolicy(const int userId, bool &mainMonitorPolicy
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, query.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// bind
 	res = sqlite3_bind_int(m_stmt, 1, userId);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	// step
 	mainMonitorPolicy = false;
@@ -1104,10 +1103,10 @@ PrivacyGuardDb::PgGetMainMonitorPolicy(const int userId, bool &mainMonitorPolicy
 	else {
 		m_dbMutex.unlock();
 		res = PgAddMainMonitorPolicy(userId);
-		TryReturn(res == PRIV_FLTR_ERROR_SUCCESS, res, , "PgAddMainMonitorPolicy failed : %d", res);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "PgAddMainMonitorPolicy failed : %d", res);
 	}
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
@@ -1122,23 +1121,23 @@ PrivacyGuardDb::PgDeleteMainMonitorPolicyByUserId(const int userId)
 	if(m_bDBOpen == false) {
 		openSqliteDB();
 	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_FLTR_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, QUERY_DELETE.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 	// bind
 	res = sqlite3_bind_int(m_stmt, 1, userId);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	// step
 	res = sqlite3_step(m_stmt);
-	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_FLTR_ERROR_DB_ERROR, "sqlite3_step : %d", res);
+	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
 
 	m_dbMutex.unlock();
 
-	return PRIV_FLTR_ERROR_SUCCESS;
+	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 PrivacyGuardDb::PrivacyGuardDb(void)

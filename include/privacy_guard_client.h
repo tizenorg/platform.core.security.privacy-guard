@@ -11,9 +11,9 @@
  * distributed under the License is distributed on an AS IS BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License. 
+ * limitations under the License.
  */
- 
+
 /**
  * @file	privacy_guard_client.h
  * @brief	APIs for privacy-guard-client
@@ -33,7 +33,7 @@ extern "C" {
  * @brief	Called when the reply of the monitor policy request is delivered.
  * @since	tizen 3.0
  *
- * @param[in] privacy_id		The privacy ID 
+ * @param[in] privacy_id		The privacy ID
  * @param[in] monitor_policy	The monitor policy (0 or 1)
  * @param[in] user_data		The user data passed from the callback registration function
  *
@@ -47,7 +47,7 @@ typedef bool (*privacy_guard_client_monitor_policy_cb) (const char *privacy_id, 
  * @brief	Called when the reply of the package id request is delivered.
  * @since	tizen 3.0
  *
- * @param[in] package_id	The package ID 
+ * @param[in] package_id	The package ID
  * @param[in] user_data	The user data passed from the callback registration function
  *
  * @returns: true to continue with the next iteration of the loop, otherwise return false to break out of the loop
@@ -60,7 +60,7 @@ typedef bool (*privacy_guard_client_package_id_cb) (const char *package_id, void
  * @brief	Called when the reply of the privacy count request is delivered.
  * @since	tizen 3.0
  *
- * @param[in] privacy_id	The privacy ID 
+ * @param[in] privacy_id	The privacy ID
  * @param[in] count		The privacy count
  * @param[in] user_data	The user data passed from the callback registration function
  *
@@ -74,7 +74,7 @@ typedef bool (*privacy_guard_client_privacy_count_cb) (const char *privacy_id, c
  * @brief	Called when the reply of the privacy count request of package is delivered.
  * @since	tizen 3.0
  *
- * @param[in] privacy_id	The privacy ID 
+ * @param[in] privacy_id	The privacy ID
  * @param[in] count		The privacy count of a package
  * @param[in] user_data	The user data passed from the callback registration function
  *
