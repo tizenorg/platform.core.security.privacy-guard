@@ -28,11 +28,13 @@
 #define WRITE_TIMEOUT_SEC 0
 #define WRITE_TIMEOUT_NSEC 100000000
 #define MAX_BUFFER 10240
+#define BUF_SIZE 256
 
 int
 SocketStream::throwWithErrnoMessage(std::string function_name)
 {
-	PG_LOGE("%s : %s", function_name.c_str(), strerror(errno));
+	char buf[BUF_SIZE];
+	PG_LOGE("%s : %s", function_name.c_str(), strerror_r(errno, buf, sizeof(buf)));
 	return errno;
 }
 
@@ -47,6 +49,7 @@ SocketStream::readStream(size_t num, void* pBytes)
 
 	char partBuffer[MAX_BUFFER];
 	std::string wholeBuffer;
+	char buf[BUF_SIZE];
 
 	fd_set rset, allset;
 	int maxFd;
@@ -73,7 +76,7 @@ SocketStream::readStream(size_t num, void* pBytes)
 		{
 			if (errno == EINTR)
 				continue;
-			PG_LOGD("pselect : %s", strerror(errno));
+			PG_LOGD("pselect : %s", strerror_r(errno, buf, sizeof(buf)));
 			return -1;
 		}
 		//This means pselect got timedout
@@ -88,7 +91,7 @@ SocketStream::readStream(size_t num, void* pBytes)
 			{
 				if(errno == ECONNRESET || errno == ENOTCONN || errno == ETIMEDOUT)
 				{
-					PG_LOGI("Connection closed : %s", strerror(errno));
+					PG_LOGI("Connection closed : %s", strerror_r(errno, buf, sizeof(buf)));
 					return -1;
 				}
 				else if (errno != EAGAIN && errno != EWOULDBLOCK){
@@ -120,6 +123,7 @@ SocketStream::writeStream(size_t num, const void* pBytes)
 
 	fd_set wset, allset;
 	int maxFd;
+	char buf[BUF_SIZE];
 
 	timespec timeout;
 
@@ -144,7 +148,7 @@ SocketStream::writeStream(size_t num, const void* pBytes)
 		{
 			if(errno == EINTR)
 				continue;
-			PG_LOGD("pselect : %s", strerror(errno));
+			PG_LOGD("pselect : %s", strerror_r(errno, buf, sizeof(buf)));
 			return -1;
 		}
 
@@ -154,7 +158,7 @@ SocketStream::writeStream(size_t num, const void* pBytes)
 			{
 				if(errno == ECONNRESET || errno == EPIPE)
 				{
-					PG_LOGI("Connection closed : %s", strerror(errno));
+					PG_LOGI("Connection closed : %s", strerror_r(errno, buf, sizeof(buf)));
 					return -1;
 
 				}

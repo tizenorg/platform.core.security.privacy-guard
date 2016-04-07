@@ -71,8 +71,9 @@ int
 PrivacyGuardDb::PgAddPrivacyAccessLog(const int userId, std::list < std::pair < std::string, std::string > > logInfoList)
 {
 	time_t current_date;
+	struct tm tm;
 	current_date = time(NULL);
-	localtime(&current_date);
+	localtime_r(&current_date, &tm);
 
 	if(current_date <= 0) {
 		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
@@ -184,8 +185,9 @@ int
 PrivacyGuardDb::PgAddPrivacyAccessLogTest(const int userId, const std::string packageId, const std::string privacyId)
 {
 	time_t current_date;
+	struct tm tm;
 	current_date = time(NULL);
-	localtime(&current_date);
+	localtime_r(&current_date, &tm);
 
 	if(current_date <= 0) {
 		return PRIV_GUARD_ERROR_INVALID_PARAMETER;

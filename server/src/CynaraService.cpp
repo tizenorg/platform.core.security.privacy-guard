@@ -28,6 +28,8 @@
 #include "CynaraService.h"
 #include "PrivacyGuardDb.h"
 
+#define BUF_SIZE 256
+
 static cynara_monitor_configuration *p_conf;
 static cynara_monitor *p_cynara_monitor;
 static cynara_monitor_entry **monitor_entries;
@@ -75,15 +77,16 @@ CynaraService::start(void)
 	PG_LOGI("CynaraService starting");
 
 	int res = 0;
+	char buf[256];
 
 	sigset_t sigset;
 	sigemptyset(&sigset);
 	res = pthread_sigmask(SIG_BLOCK, &sigset, NULL);
-	TryReturn( res >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "pthread_sigmask : %s", strerror(errno));
+	TryReturn( res >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "pthread_sigmask : %s", strerror_r(errno, buf, sizeof(buf)));
 
 	pthread_t cynaraThread;
 	res = pthread_create(&cynaraThread, NULL, &getEntriesThread, this);
-	TryReturn( res >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, errno = res, "pthread_create : %s", strerror(res));
+	TryReturn( res >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, errno = res, "pthread_create : %s", strerror_r(errno, buf, sizeof(buf)));
 
 	m_cynaraThread = cynaraThread;
 
@@ -187,11 +190,12 @@ CynaraService::stop(void)
 {
 	PG_LOGI("Stopping");
 
+	char buf[BUF_SIZE];
 	int returned_value;
 	if((returned_value = pthread_kill(m_cynaraThread, m_signalToClose)) < 0)
 	{
 		errno = returned_value;
-		PG_LOGE("pthread_kill() : %s", strerror(errno));
+		PG_LOGE("pthread_kill() : %s", strerror_r(errno, buf, sizeof(buf)));
 		return PRIV_GUARD_ERROR_IPC_ERROR;
 	}
 	pthread_join(m_cynaraThread, NULL);

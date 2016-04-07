@@ -26,6 +26,8 @@
 #include "SocketClient.h"
 #include "Utils.h"
 
+#define BUF_SIZE 256
+
 bool PrivacyChecker::m_isInitialized = false;
 bool PrivacyChecker::m_isMonitorEnable = false;
 std::map < std::string, bool >PrivacyChecker::m_privacyCache;
@@ -73,8 +75,9 @@ PrivacyChecker::initializeGMain(void)
 	TryReturn(m_pLoop != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, ,"cannot create m_pLoop");
 
 	std::unique_lock<std::mutex> lock(m_dbusMutex);
+	char buf[BUF_SIZE];
 	int res = pthread_create(&m_signalThread, NULL, &runSignalListenerThread, NULL);
-	TryReturn(res >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, errno = res;, "Failed to create listener thread :%s", strerror(res));
+	TryReturn(res >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, errno = res;, "Failed to create listener thread :%s", strerror_r(res, buf, sizeof(buf)));
 
 	m_isInitialized = true;
 

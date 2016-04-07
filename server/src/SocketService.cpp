@@ -30,6 +30,8 @@
 #include "SocketService.h"
 #include "SocketConnection.h"
 
+#define BUF_SIZE 256
+
 const int SocketService::MAX_LISTEN = 5;
 
 SocketService::SocketService(void)
@@ -50,20 +52,21 @@ SocketService::initialize(void)
 {
 	PG_LOGI("SocketService initializing");
 
+	char buf[BUF_SIZE];
 	m_listenFd = socket(AF_UNIX, SOCK_STREAM, 0);
-	TryReturn( m_listenFd != -1, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "socket : %s", strerror(errno));
+	TryReturn( m_listenFd != -1, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "socket : %s", strerror_r(errno, buf, sizeof(buf)));
 
 	int flags = -1;
 	int res;
 	if ( (flags = fcntl(m_listenFd, F_GETFL, 0)) == -1)
 		flags = 0;
 	res = fcntl(m_listenFd, F_SETFL, flags | O_NONBLOCK);
-	TryReturn( res != -1, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "fcntl : %s", strerror(errno));
+	TryReturn( res != -1, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "fcntl : %s", strerror_r(errno, buf, sizeof(buf)));
 
 	sockaddr_un server_address;
 	bzero(&server_address, sizeof(server_address));
 	server_address.sun_family = AF_UNIX;
-	strcpy(server_address.sun_path, SERVER_ADDRESS.c_str());
+	strncpy(server_address.sun_path, SERVER_ADDRESS.c_str(), strlen(SERVER_ADDRESS.c_str()));
 	unlink(server_address.sun_path);
 
 	mode_t socket_umask, original_umask;
@@ -71,7 +74,7 @@ SocketService::initialize(void)
 	original_umask = umask(socket_umask);
 
 	res = bind(m_listenFd, (struct sockaddr*)&server_address, SUN_LEN(&server_address));
-	TryReturn( res != -1, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "bind : %s", strerror(errno));
+	TryReturn( res != -1, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "bind : %s", strerror_r(errno, buf, sizeof(buf)));
 
 	umask(original_umask);
 
@@ -94,12 +97,13 @@ SocketService::start(void)
 //	}
 
 	int res = 0;
+	char buf[BUF_SIZE];
 	res = pthread_sigmask(SIG_BLOCK, &sigset, NULL);
-	TryReturn( res >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "pthread_sigmask : %s", strerror(errno));
+	TryReturn( res >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "pthread_sigmask : %s", strerror_r(errno, buf, sizeof(buf)));
 
 	pthread_t mainThread;
 	res = pthread_create(&mainThread, NULL, &serverThread, this);
-	TryReturn( res >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, errno = res, "pthread_create : %s", strerror(res));
+	TryReturn( res >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, errno = res, "pthread_create : %s", strerror_r(res, buf, sizeof(buf)));
 
 	m_mainThread = mainThread;
 
@@ -125,8 +129,9 @@ SocketService::serverThread(void* pData)
 int
 SocketService::mainloop(void)
 {
+	char buf[BUF_SIZE];
 	if( listen(m_listenFd, MAX_LISTEN) == -1 ){
-		PG_LOGE("listen : %s", strerror(errno));
+		PG_LOGE("listen : %s", strerror_r(errno, buf, sizeof(buf)));
 		return PRIV_GUARD_ERROR_IPC_ERROR;
 	}
 
@@ -135,14 +140,14 @@ SocketService::mainloop(void)
 	sigset_t sigset;
 	int res;
 	res = sigemptyset(&sigset);
-	TryReturn( res != -1, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "sigemptyset : %s", strerror(errno));
+	TryReturn( res != -1, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "sigemptyset : %s", strerror_r(errno, buf, sizeof(buf)));
 
 //	if( sigaddset(&sigset, m_signalToClose) == -1) {
 //		PG_LOGE("sigaddset : %s", strerror(errno));
 //		return -1;
 //	}
 	signal_fd = signalfd(-1, &sigset, 0);
-	TryReturn( signal_fd >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "signalfd : %s", strerror(errno));
+	TryReturn( signal_fd >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "signalfd : %s", strerror_r(errno, buf, sizeof(buf)));
 
 	//Setting descriptors for pselect
 	fd_set allset, rset;
@@ -176,7 +181,7 @@ SocketService::mainloop(void)
 			signalfd_siginfo siginfo;
 			ssize_t res;
 			res = read(signal_fd, &siginfo, sizeof(siginfo));
-			TryReturn( res > 0, PRIV_GUARD_ERROR_IPC_ERROR, closeConnections();, "read : %s", strerror(errno));
+			TryReturn( res > 0, PRIV_GUARD_ERROR_IPC_ERROR, closeConnections();, "read : %s", strerror_r(errno, buf, sizeof(buf)));
 			TryReturn( (size_t)res == sizeof(siginfo), PRIV_GUARD_ERROR_IPC_ERROR, closeConnections();, "couldn't read whole siginfo");
 
 			if((int)siginfo.ssi_signo == m_signalToClose)
@@ -194,7 +199,7 @@ SocketService::mainloop(void)
 		{
 			int clientFd;
 			clientFd = accept(m_listenFd, NULL, NULL);
-			TryReturn( clientFd != -1, PRIV_GUARD_ERROR_IPC_ERROR, closeConnections();, "accept : %s", strerror(errno));
+			TryReturn( clientFd != -1, PRIV_GUARD_ERROR_IPC_ERROR, closeConnections();, "accept : %s", strerror_r(errno, buf, sizeof(buf)));
 
 			PG_LOGI("Got incoming connection");
 			ConnectionInfo * connection = new ConnectionInfo(clientFd, (void *)this);
@@ -284,10 +289,11 @@ int
 SocketService::stop(void)
 {
 	PG_LOGI("Stopping");
+	char buf[BUF_SIZE];
 	if(close(m_listenFd) == -1)
 		if(errno != ENOTCONN)
 		{
-			PG_LOGE("close() : %s", strerror(errno));
+			PG_LOGE("close() : %s", strerror_r(errno, buf, sizeof(buf)));
 			return PRIV_GUARD_ERROR_IPC_ERROR;
 		}
 
@@ -295,7 +301,7 @@ SocketService::stop(void)
 	if((returned_value = pthread_kill(m_mainThread, m_signalToClose)) < 0)
 	{
 		errno = returned_value;
-		PG_LOGE("pthread_kill() : %s", strerror(errno));
+		PG_LOGE("pthread_kill() : %s", strerror_r(errno, buf, sizeof(buf)));
 		return PRIV_GUARD_ERROR_IPC_ERROR;
 	}
 	pthread_join(m_mainThread, NULL);
@@ -360,12 +366,13 @@ void
 SocketService::closeConnections(void)
 {
 	int clientSocket;
+	char buf[BUF_SIZE];
 	PG_LOGI("Closing client sockets");
 	while(popClientSocket(&clientSocket))
 	{
 		if(close(clientSocket) == -1)
 		{
-			PG_LOGE("close() : %s", strerror(errno));
+			PG_LOGE("close() : %s", strerror_r(errno, buf, sizeof(buf)));
 		}
 	}
 
