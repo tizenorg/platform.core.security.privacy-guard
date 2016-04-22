@@ -54,6 +54,8 @@ PrivacyInfoService::PgAddPrivacyAccessLogTest(SocketConnection* pConnector)
 void
 PrivacyInfoService::PgAddMonitorPolicy(SocketConnection* pConnector)
 {
+	LOGD("[STHAN] PgAddMonitorPolicy - START");
+
 	int userId = 0;
 	std::string pkgId;
 	std::list < std::string > list;

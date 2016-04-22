@@ -237,6 +237,8 @@ PrivacyGuardDb::PgAddPrivacyAccessLogTest(const int userId, const std::string pa
 int
 PrivacyGuardDb::PgAddMonitorPolicy(const int userId, const std::string packageId, const std::list < std::string > privacyList, bool monitorPolicy)
 {
+	LOGD("[STHAN] PgAddMonitorPolicy - START");
+
 	int res = -1;
 
 	static const std::string QUERY_INSERT = std::string("INSERT INTO MonitorPolicy(USER_ID, PKG_ID, PRIVACY_ID, MONITOR_POLICY) VALUES(?, ?, ?, ?)");

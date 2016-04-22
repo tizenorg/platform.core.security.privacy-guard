@@ -107,6 +107,7 @@ PrivacyGuardClient::PgAddPrivacyAccessLogBeforeTerminate(void)
 int
 PrivacyGuardClient::PgAddMonitorPolicy(const int userId, const std::string pkgId, const std::list < std::string >& list, int monitorPolicy)
 {
+	LOGD("[STHAN] PgAddMonitorPolicy - START");
 
 	std::list < std::string > privacyList;
 

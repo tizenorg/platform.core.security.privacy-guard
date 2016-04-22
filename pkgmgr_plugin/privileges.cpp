@@ -42,6 +42,8 @@ extern "C"
 __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 {
+	LOGD("[STHAN] PKGMGR_PARSER_PLUGIN_INSTALL - START");
+
 	int ret;
 
 	// Node: <privileges>
@@ -123,6 +125,8 @@ extern "C"
 __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_UNINSTALL(xmlDocPtr docPtr, const char* packageId)
 {
+	LOGD("[STHAN] PKGMGR_PARSER_PLUGIN_UNINSTALL - START");
+
 	if (packageId == NULL)
 		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
 
@@ -148,6 +152,8 @@ extern "C"
 __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_UPGRADE(xmlDocPtr docPtr, const char* packageId)
 {
+	LOGD("[STHAN] PKGMGR_PARSER_PLUGIN_UPGRADE - START");
+
 	int res = 0;
 
     LOGD("Update privacy Info");
