@@ -44,7 +44,7 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 {
 	LOGD("[STHAN] PKGMGR_PARSER_PLUGIN_INSTALL - START");
 
-	int ret;
+	int ret = 0;
 
 	// Node: <privileges>
 	xmlNodePtr curPtr = xmlFirstElementChild(xmlDocGetRootElement(docPtr));
@@ -78,7 +78,7 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 
 	char** ppPrivilegeList = (char**) calloc(privilegeList.size() + 1, sizeof(char*));
 	std::list <std::string>::iterator iter = privilegeList.begin();
-	for (int i = 0; i < privilegeList.size(); ++i)
+	for (size_t i = 0; i < privilegeList.size(); ++i)
 	{
 		ppPrivilegeList[i] = (char*)calloc (strlen(iter->c_str()) + 1, sizeof(char));
 		if (ppPrivilegeList[i] == NULL)
@@ -98,7 +98,7 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 	int monitor_policy = 1;
 
 	if (user_id < 0 || packageId == NULL)
-		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
+		return -EINVAL;
 
 	PrivacyGuardClient *pInst = PrivacyGuardClient::getInstance();
 	std::list < std::string > privilege_List;
@@ -108,10 +108,8 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 		LOGD("privacyList : %s", *ppPrivilegeList);
 		privilege_List.push_back(std::string(*ppPrivilegeList++));
 	}
-	int retval = pInst->PgAddMonitorPolicy(user_id, std::string(packageId), privilege_List, monitor_policy);
-
+	ret = pInst->PgAddMonitorPolicy(user_id, std::string(packageId), privilege_List, monitor_policy);
 	destroy_char_list(ppPrivilegeList, privilegeList.size() + 1);
-
 	if (ret != PRIV_GUARD_ERROR_SUCCESS)
 	{
 		LOGD("Failed to install monitor policy: %d", ret);
