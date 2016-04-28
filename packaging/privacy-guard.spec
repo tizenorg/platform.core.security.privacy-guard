@@ -123,6 +123,7 @@ fi
 %license  LICENSE.APLv2
 %manifest privacy-guard-client.manifest
 %{_libdir}/libprivacy-guard-client.so*
+%{_sysconfdir}/package-manager/parserlib/libprivileges.so
 
 %files -n privacy-guard-client-devel
 %defattr(-,root,root,-)

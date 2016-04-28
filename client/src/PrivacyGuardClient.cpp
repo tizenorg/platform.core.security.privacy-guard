@@ -107,21 +107,23 @@ PrivacyGuardClient::PgAddPrivacyAccessLogBeforeTerminate(void)
 int
 PrivacyGuardClient::PgAddMonitorPolicy(const int userId, const std::string pkgId, const std::list < std::string >& list, int monitorPolicy)
 {
-	LOGD("[STHAN] PgAddMonitorPolicy - START");
-
 	std::list < std::string > privacyList;
 
 	int res = PrivacyIdInfo::getPrivacyIdListFromPrivilegeList(list, privacyList);
-	if (res != PRIV_GUARD_ERROR_SUCCESS )
+	if (res != PRIV_GUARD_ERROR_SUCCESS ) {
+		PG_LOGD("PrivacyIdInfo::getPrivacyIdListFromPrivilegeList() is failed. [%d]", res);
 		return res;
+	}
 
-	if (privacyList.size() == 0)
+	if (privacyList.size() == 0) {
+		PG_LOGD("PrivacyGuardClient::PgAddMonitorPolicy: privacyList.size() is 0.");
 		return PRIV_GUARD_ERROR_SUCCESS;
-
-	int result = PRIV_GUARD_ERROR_SUCCESS;
+	}
 
 	res = m_pSocketClient->connect();
 	TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "connect : %d", res);
+
+	int result = PRIV_GUARD_ERROR_SUCCESS;
 
 	res = m_pSocketClient->call("PgAddMonitorPolicy", userId, pkgId, privacyList, monitorPolicy, &result);
 	TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, m_pSocketClient->disconnect(), "call : %d", res);

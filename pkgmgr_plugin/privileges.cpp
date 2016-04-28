@@ -23,6 +23,7 @@
 #include <string>
 #include "privacy_guard_client_internal.h"
 #include "PrivacyGuardClient.h"
+#include "Utils.h"
 
 static const xmlChar _NODE_PRIVILEGES[]		= "privileges";
 static const xmlChar _NODE_PRIVILEGE[]		= "privilege";
@@ -41,8 +42,8 @@ void destroy_char_list(char** ppList, int size)
 extern "C"
 __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
-{
-	LOGD("[STHAN] PKGMGR_PARSER_PLUGIN_INSTALL - START");
+{	
+	PG_LOGD("PKGMGR_PARSER_PLUGIN_INSTALL() called.");
 
 	int ret = 0;
 
@@ -65,7 +66,7 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 
 			if (pPrivilege == NULL)
 			{
-				LOGE("Failed to get value");
+				PG_LOGE("Failed to get value");
 				return -EINVAL;
 			}
             else
@@ -105,14 +106,14 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 
 	while (*ppPrivilegeList[0] != '\0')
 	{
-		LOGD("privacyList : %s", *ppPrivilegeList);
+		PG_LOGD("privacyList : %s", *ppPrivilegeList);
 		privilege_List.push_back(std::string(*ppPrivilegeList++));
 	}
 	ret = pInst->PgAddMonitorPolicy(user_id, std::string(packageId), privilege_List, monitor_policy);
 	destroy_char_list(ppPrivilegeList, privilegeList.size() + 1);
 	if (ret != PRIV_GUARD_ERROR_SUCCESS)
 	{
-		LOGD("Failed to install monitor policy: %d", ret);
+		PG_LOGD("Failed to install monitor policy: %d", ret);
 		return -EINVAL;
 	}
 
@@ -123,7 +124,7 @@ extern "C"
 __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_UNINSTALL(xmlDocPtr docPtr, const char* packageId)
 {
-	LOGD("[STHAN] PKGMGR_PARSER_PLUGIN_UNINSTALL - START");
+	PG_LOGD("PKGMGR_PARSER_PLUGIN_UNINSTALL() called.");
 
 	if (packageId == NULL)
 		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
@@ -133,14 +134,14 @@ int PKGMGR_PARSER_PLUGIN_UNINSTALL(xmlDocPtr docPtr, const char* packageId)
 	int res = pInst->PgDeleteLogsByPackageId(std::string(packageId));
 	if (res != PRIV_GUARD_ERROR_SUCCESS)
 	{
-		LOGD("Failed to delete logs");
+		PG_LOGD("Failed to delete logs");
 		return 0;
 	}
 
 	res = pInst->PgDeleteMonitorPolicyByPackageId(std::string(packageId));
 	if (res != PRIV_GUARD_ERROR_SUCCESS)
 	{
-		LOGD("Failed to delete monitor policy");
+		PG_LOGD("Failed to delete monitor policy");
 	}
 
 	return 0;
@@ -150,22 +151,22 @@ extern "C"
 __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_UPGRADE(xmlDocPtr docPtr, const char* packageId)
 {
-	LOGD("[STHAN] PKGMGR_PARSER_PLUGIN_UPGRADE - START");
+	PG_LOGD("PKGMGR_PARSER_PLUGIN_UPGRADE() called.");
 
 	int res = 0;
 
-    LOGD("Update privacy Info");
+    PG_LOGD("Update privacy Info");
 
 	res = PKGMGR_PARSER_PLUGIN_UNINSTALL(docPtr, packageId);
 	if (res != 0)
 	{
-		LOGD("Privacy info can be already uninstalled");
+		PG_LOGD("Privacy info can be already uninstalled");
 	}
 
 	res = PKGMGR_PARSER_PLUGIN_INSTALL(docPtr, packageId);
 	if (res != 0)
 	{
-		LOGD("Failed to install privacy Info: %d", res);
+		PG_LOGD("Failed to install privacy Info: %d", res);
 	}
 	return res;
 }

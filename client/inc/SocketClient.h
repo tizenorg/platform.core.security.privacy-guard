@@ -46,9 +46,8 @@
  * Structures and classes are not (yet) supported.
  */
 
-#include <string>
-#include <PrivacyGuardTypes.h>
-#include <Utils.h>
+#include "PrivacyGuardTypes.h"
+#include "Utils.h"
 
 class EXTERN_API SocketClient
 {

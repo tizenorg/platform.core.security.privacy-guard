@@ -17,6 +17,7 @@ INCLUDE_DIRECTORIES(
     /usr/include/libxml2
     /usr/include/package_manager
     /usr/include/dlog
+    /usr/include/db-util
     "${CMAKE_SOURCE_DIR}/client/inc/"
     "${CMAKE_SOURCE_DIR}/common/inc/"
     "${CMAKE_SOURCE_DIR}/include/"
@@ -45,11 +46,11 @@ ADD_DEPENDENCIES(${this_target} privacy-guard-client)
 ## SET LINKER FLAGS
 SET(CMAKE_SHARED_LINKER_FLAGS -Wl,--no-undefined)
 ## SET PRIVACY_POPUP FLAG
-OPTION (PRIVACY_POPUP "PRIVACY_POPUP" ON)
-IF(PRIVACY_POPUP)
-	MESSAGE("PRIVACY_POPUP IS ENABLED")
-	ADD_DEFINITIONS("-D__PRIVACY_POPUP")
-ENDIF(PRIVACY_POPUP)
+#OPTION (PRIVACY_POPUP "PRIVACY_POPUP" ON)
+#IF(PRIVACY_POPUP)
+#	MESSAGE("PRIVACY_POPUP IS ENABLED")
+#	ADD_DEFINITIONS("-D__PRIVACY_POPUP")
+#ENDIF(PRIVACY_POPUP)
 
 
 TARGET_LINK_LIBRARIES(${this_target} ${pkg_LDFLAGS} ${pkg_LIBRARIES})
@@ -63,4 +64,8 @@ ADD_CUSTOM_COMMAND(TARGET ${this_target}
         )
 
 #INSTALL(TARGETS ${this_target} DESTINATION "../etc/package-manager/parserlib")
+#INSTALL(TARGETS ${this_target} DESTINATION "/etc/package-manager/parserlib")
+#INSTALL(TARGETS ${this_target} DESTINATION ${_sysconfdir}/package-manager/parserlib)
+#INSTALL(TARGETS ${this_target} DESTINATION "etc/package-manager/parserlib")
+INSTALL(TARGETS ${this_target} DESTINATION ${SYSCONF_INSTALL_DIR}/package-manager/parserlib/)
 
