@@ -21,29 +21,41 @@
 #include <dlog.h>
 #include <list>
 #include <string>
+#include <unistd.h>
 #include "privacy_guard_client_internal.h"
 #include "PrivacyGuardClient.h"
-#include "Utils.h"
+
+#define DEFAULT_MONITOR_POLICY 1
 
 static const xmlChar _NODE_PRIVILEGES[]		= "privileges";
 static const xmlChar _NODE_PRIVILEGE[]		= "privilege";
 
 void destroy_char_list(char** ppList, int size)
 {
-	int i;
-	for (i = 0; i < size; ++i)
-	{
-		if (ppList[i])
-			free(ppList[i]);
+	int i = 0;
+
+	if (ppList) {
+		for (i = 0; i < size; ++i) {
+			if (ppList[i])
+				free(ppList[i]);
+		}
+		free(ppList);
 	}
-	free(ppList);
 }
 
 extern "C"
 __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
-{	
-	PG_LOGD("PKGMGR_PARSER_PLUGIN_INSTALL() called.");
+{
+	if (packageId == NULL) {
+		LOGE("Package ID is NULL");
+		return -EINVAL;
+	}
+
+	LOGD("PKGMGR_PARSER_PLUGIN_INSTALL() called with [%s].", packageId);
+
+	uid_t user_id = getuid();
+	LOGD("Current userid is %d.", user_id);
 
 	int ret = 0;
 
@@ -51,26 +63,19 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 	xmlNodePtr curPtr = xmlFirstElementChild(xmlDocGetRootElement(docPtr));
 
 	curPtr = curPtr->xmlChildrenNode;
-	if (curPtr == NULL)
-	{
-		LOGD("No privileges");
-		return 0;
+	if (curPtr == NULL) {
+		LOGE("No privileges");
+		return -EINVAL;
 	}
 
 	std::list <std::string> privilegeList;
-	while (curPtr != NULL)
-	{
-		if (xmlStrcmp(curPtr->name, _NODE_PRIVILEGE) == 0)
-		{
+	while (curPtr != NULL) {
+		if (xmlStrcmp(curPtr->name, _NODE_PRIVILEGE) == 0) {
 			xmlChar* pPrivilege = xmlNodeListGetString(docPtr, curPtr->xmlChildrenNode, 1);
-
-			if (pPrivilege == NULL)
-			{
-				PG_LOGE("Failed to get value");
+			if (pPrivilege == NULL) {
+				LOGE("Failed to get privilege value.");
 				return -EINVAL;
-			}
-            else
-			{
+			} else {
 				privilegeList.push_back(std::string( reinterpret_cast<char*> (pPrivilege)));
 			}
 		}
@@ -78,12 +83,12 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 	}
 
 	char** ppPrivilegeList = (char**) calloc(privilegeList.size() + 1, sizeof(char*));
+	char** temp = ppPrivilegeList;
 	std::list <std::string>::iterator iter = privilegeList.begin();
-	for (size_t i = 0; i < privilegeList.size(); ++i)
-	{
-		ppPrivilegeList[i] = (char*)calloc (strlen(iter->c_str()) + 1, sizeof(char));
-		if (ppPrivilegeList[i] == NULL)
-		{
+	for (size_t i = 0; i < privilegeList.size(); ++i) {
+		ppPrivilegeList[i] = (char*)calloc(strlen(iter->c_str()) + 1, sizeof(char));
+		if (ppPrivilegeList[i] == NULL) {
+			LOGE("Failed allocate memory.");
 			destroy_char_list(ppPrivilegeList, privilegeList.size() + 1);
 			return -ENOMEM;
 		}
@@ -94,28 +99,22 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 	ppPrivilegeList[privilegeList.size()] = (char*)calloc (2, sizeof(char));
 	memcpy(ppPrivilegeList[privilegeList.size()], "\0", 1);
 
-	// TO DO : get user id
-	int user_id = 1;
-	int monitor_policy = 1;
-
-	if (user_id < 0 || packageId == NULL)
-		return -EINVAL;
-
 	PrivacyGuardClient *pInst = PrivacyGuardClient::getInstance();
 	std::list < std::string > privilege_List;
 
-	while (*ppPrivilegeList[0] != '\0')
-	{
-		PG_LOGD("privacyList : %s", *ppPrivilegeList);
+	while (*ppPrivilegeList[0] != '\0') {
+		LOGD("privilege in the List: %s", *ppPrivilegeList);
 		privilege_List.push_back(std::string(*ppPrivilegeList++));
 	}
+
+	int monitor_policy = DEFAULT_MONITOR_POLICY;
 	ret = pInst->PgAddMonitorPolicy(user_id, std::string(packageId), privilege_List, monitor_policy);
-	destroy_char_list(ppPrivilegeList, privilegeList.size() + 1);
-	if (ret != PRIV_GUARD_ERROR_SUCCESS)
-	{
-		PG_LOGD("Failed to install monitor policy: %d", ret);
-		return -EINVAL;
+	if (ret != PRIV_GUARD_ERROR_SUCCESS) {
+		LOGE("Failed to add monitor policy: [%d]", ret);
+		return -EIO;
 	}
+	if (temp)
+		destroy_char_list(temp, privilegeList.size() + 1);
 
     return 0;
 }
@@ -124,25 +123,28 @@ extern "C"
 __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_UNINSTALL(xmlDocPtr docPtr, const char* packageId)
 {
-	PG_LOGD("PKGMGR_PARSER_PLUGIN_UNINSTALL() called.");
+	if (packageId == NULL) {
+		LOGE("Package ID is NULL");
+		return -EINVAL;
+	}
 
-	if (packageId == NULL)
-		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
+	LOGD("PKGMGR_PARSER_PLUGIN_UNINSTALL() called with [%s].", packageId);
 
 	PrivacyGuardClient *pInst = PrivacyGuardClient::getInstance();
 
 	int res = pInst->PgDeleteLogsByPackageId(std::string(packageId));
-	if (res != PRIV_GUARD_ERROR_SUCCESS)
-	{
-		PG_LOGD("Failed to delete logs");
-		return 0;
+	if (res != PRIV_GUARD_ERROR_SUCCESS) {
+		LOGE("Failed to delete logs using PgDeleteLogsByPackageId() [%d]", res);
+		return -EIO;
 	}
 
 	res = pInst->PgDeleteMonitorPolicyByPackageId(std::string(packageId));
-	if (res != PRIV_GUARD_ERROR_SUCCESS)
-	{
-		PG_LOGD("Failed to delete monitor policy");
+	if (res != PRIV_GUARD_ERROR_SUCCESS) {
+		LOGE("Failed to delete monitor policy using PgDeleteMonitorPolicyByPackageId() [%d]", res);
+		return -EIO;
 	}
+
+	LOGD("PKGMGR_PARSER_PLUGIN_UNINSTALL() end.");
 
 	return 0;
 }
@@ -151,22 +153,24 @@ extern "C"
 __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_UPGRADE(xmlDocPtr docPtr, const char* packageId)
 {
-	PG_LOGD("PKGMGR_PARSER_PLUGIN_UPGRADE() called.");
+	if (packageId == NULL) {
+		LOGE("Package ID is NULL");
+		return -EINVAL;
+	}
 
-	int res = 0;
+	LOGD("PKGMGR_PARSER_PLUGIN_UPGRADE() called with [%s].", packageId);
 
-    PG_LOGD("Update privacy Info");
-
-	res = PKGMGR_PARSER_PLUGIN_UNINSTALL(docPtr, packageId);
-	if (res != 0)
-	{
-		PG_LOGD("Privacy info can be already uninstalled");
+	int res = PKGMGR_PARSER_PLUGIN_UNINSTALL(docPtr, packageId);
+	if (res != 0) {
+		LOGE("PKGMGR_PARSER_PLUGIN_UNINSTALL is failed. [%d]", res);
+		return res;
 	}
 
 	res = PKGMGR_PARSER_PLUGIN_INSTALL(docPtr, packageId);
-	if (res != 0)
-	{
-		PG_LOGD("Failed to install privacy Info: %d", res);
+	if (res != 0) {
+		LOGE("PKGMGR_PARSER_PLUGIN_INSTALL is failed. [%d]", res);
+		return res;
 	}
+
 	return res;
 }

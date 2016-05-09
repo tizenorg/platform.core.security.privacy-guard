@@ -131,6 +131,7 @@ PrivacyIdInfo::getPrivacyIdListFromPrivilegeList(const std::list< std::string > 
 		int res = getPrivacyIdFromPrivilege(*iter, privacyId);
 		if (res == PRIV_GUARD_ERROR_SUCCESS)
 		{
+			PG_LOGD("Privacy[%s] from Privilege[%s]", privacyId.c_str(), iter->c_str());
 			privacyIdSet.insert(privacyId);
 		}
 	}
