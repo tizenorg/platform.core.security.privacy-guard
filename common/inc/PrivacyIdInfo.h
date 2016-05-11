@@ -34,9 +34,9 @@ public:
 	static int getPrivacyIdListFromPrivilegeList(const std::list< std::string > privilegeList, std::list< std::string >& privacyIdList);
 	static bool isValidPrivacyId(const std::string privacyId);
 	static int getAllPrivacyId(std::list< std::string >& privacyIdList);
-	static int getPrivaycDisplayName(const std::string privacyId, std::string& displayName);
-	static int getPrivaycDescription(const std::string privacyId, std::string& description);
-	static int isFeatureEnabled(const char* feature, bool& enabled);
+	//static int getPrivaycDisplayName(const std::string privacyId, std::string& displayName);
+	//static int getPrivaycDescription(const std::string privacyId, std::string& description);
+	//static int isFeatureEnabled(const char* feature, bool& enabled);
 };
 
 #endif //_PRIVACYIDINFO_H_

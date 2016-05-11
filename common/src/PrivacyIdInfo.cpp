@@ -17,6 +17,7 @@
 #include <set>
 #include <libintl.h>
 #include <system_info.h>
+#include <privilege_info.h>
 #include "PrivacyIdInfo.h"
 #include "privacy_guard_client_types.h"
 #include "PrivacyGuardTypes.h"
@@ -28,41 +29,35 @@ bool PrivacyIdInfo:: m_isInitialized;
 int
 PrivacyIdInfo::initialize(void)
 {
-	static const std::string sqlPrivilege("SELECT PRIVILEGE_ID, PRIVACY_ID from PrivilegeToPrivacyTable");
-	static const std::string sqlPrivacyInfo("SELECT FEATURE FROM PrivacyInfo where PRIVACY_ID=?");
+	GList *privacy_list = NULL, *privilege_list = NULL;
+	GList *l = NULL, *k = NULL;
 
-	openDb(PRIVACY_INFO_DB_PATH, pDbHandler, SQLITE_OPEN_READONLY);
-	prepareDb(pDbHandler, sqlPrivilege.c_str(), pStmtPrivilege);
+	int ret = privilege_info_get_privacy_list(&privacy_list);
+	if (ret != PRVMGR_ERR_NONE) {
+		PG_LOGE("Failed to get privacy list from security-privilege-manager [%d].", ret);
+		return PRIV_GUARD_ERROR_INTERNAL_ERROR;
+	}
 
-	int res;
-	while ((res = sqlite3_step(pStmtPrivilege.get())) == SQLITE_ROW)
-	{
-		const char* privilegeId =  reinterpret_cast < const char* > (sqlite3_column_text(pStmtPrivilege.get(), 0));
-		const char* privacyId =  reinterpret_cast < const char* > (sqlite3_column_text(pStmtPrivilege.get(), 1));
+	for (l = privacy_list; l != NULL; l = l->next) {
+		char *privacy_id = (char*)l->data;
+		PG_LOGD("privacy_id: %s", privacy_id);
 
-		prepareDb(pDbHandler, sqlPrivacyInfo.c_str(), pStmtPrivacyInfo);
-		res = sqlite3_bind_text(pStmtPrivacyInfo.get(), 1, privacyId, -1, SQLITE_TRANSIENT);
-		TryReturn(res == SQLITE_OK, PRIV_GUARD_ERROR_DB_ERROR, , "sqlite3_bind_text : %d", res);
-		res = sqlite3_step(pStmtPrivacyInfo.get());
-		PG_LOGD("privacy id : %s", privacyId);
-		TryReturn(res == SQLITE_DONE || res == SQLITE_ROW, PRIV_GUARD_ERROR_DB_ERROR, , "sqlite3_step : %d", res);
-
-		const char* feature =  reinterpret_cast < const char* > (sqlite3_column_text(pStmtPrivacyInfo.get(), 0));
-		if (feature != NULL)
-		{
-			bool isSupported = false;
-
-			res = isFeatureEnabled(feature, isSupported);
-			TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "isFeatureEnabled : %d", res);
-
-			if (!isSupported)
-			{
-				continue;
-			}
+		ret = privilege_info_get_privilege_list_by_privacy(privacy_id, &privilege_list);
+		if (ret != PRVMGR_ERR_NONE) {
+			PG_LOGE("Failed to get privilege list from security-privilege-manager [%d] using privacy[%s].", ret, privacy_id);
+			g_list_free(privacy_list);
+			return PRIV_GUARD_ERROR_INTERNAL_ERROR;
 		}
 
-		m_privilegeToPrivacyMap.insert(std::map< std::string, std::string >::value_type(std::string(privilegeId), std::string(privacyId)));
+		for (k = privilege_list; k != NULL; k = k->next) {
+			char *privilege_id = (char*)k->data;
+			PG_LOGD("(privacy, privilege): (%s, %s)", privacy_id, privilege_id);
+			m_privilegeToPrivacyMap.insert(std::map< std::string, std::string >::value_type(std::string(privilege_id), std::string(privacy_id)));
+		}
 	}
+
+	g_list_free(privacy_list);
+	g_list_free(privilege_list);
 
 	m_isInitialized = true;
 
@@ -72,16 +67,16 @@ PrivacyIdInfo::initialize(void)
 int
 PrivacyIdInfo::getPrivacyIdFromPrivilege(const std::string privilege, std::string& privacyId)
 {
-	if (!m_isInitialized)
-	{
+	if (!m_isInitialized) {
 		initialize();
 	}
 
 	std::map< std::string, std::string >::iterator iter = m_privilegeToPrivacyMap.find(privilege);
-	if (iter == m_privilegeToPrivacyMap.end())
-	{
+	if (iter == m_privilegeToPrivacyMap.end()) {
+		PG_LOGE("There is no matching privacy to privilege [%s]", privilege.c_str());
 		return PRIV_GUARD_ERROR_NO_DATA;
 	}
+
 	privacyId = iter->second;
 
 	return PRIV_GUARD_ERROR_SUCCESS;
@@ -90,23 +85,20 @@ PrivacyIdInfo::getPrivacyIdFromPrivilege(const std::string privilege, std::strin
 int
 PrivacyIdInfo::getPrivilegeListFromPrivacyId(const std::string privacyId, std::list< std::string >& privilegeList)
 {
-	if (!m_isInitialized)
-	{
+	if (!m_isInitialized) {
 		initialize();
 	}
 
 	privilegeList.clear();
-	for (std::map< std::string, std::string >::iterator iter = m_privilegeToPrivacyMap.begin(); iter != m_privilegeToPrivacyMap.end(); ++iter)
-	{
-		if (privacyId.compare((iter->second)) == 0)
-		{
+
+	for (std::map< std::string, std::string >::iterator iter = m_privilegeToPrivacyMap.begin(); iter != m_privilegeToPrivacyMap.end(); ++iter) {
+		if (privacyId.compare((iter->second)) == 0) {
 			privilegeList.push_back(iter->first);
 		}
 	}
 
-	if (privilegeList.size() == 0)
-	{
-		PG_LOGE("PrivilegeList of %s privacy is empty!", privacyId.c_str());
+	if (privilegeList.size() == 0) {
+		PG_LOGE("There is no matching privilege to privacy [%s].", privacyId.c_str());
 		return PRIV_GUARD_ERROR_NO_DATA;
 	}
 
@@ -116,8 +108,7 @@ PrivacyIdInfo::getPrivilegeListFromPrivacyId(const std::string privacyId, std::l
 int
 PrivacyIdInfo::getPrivacyIdListFromPrivilegeList(const std::list< std::string > privilegeList, std::list< std::string >& privacyIdList)
 {
-	if (!m_isInitialized)
-	{
+	if (!m_isInitialized) {
 		initialize();
 	}
 
@@ -125,19 +116,16 @@ PrivacyIdInfo::getPrivacyIdListFromPrivilegeList(const std::list< std::string > 
 
 	std::set< std::string > privacyIdSet;
 
-	for (std::list< std::string >::const_iterator iter = privilegeList.begin(); iter != privilegeList.end(); ++iter)
-	{
+	for (std::list< std::string >::const_iterator iter = privilegeList.begin(); iter != privilegeList.end(); ++iter) {
 		std::string privacyId;
 		int res = getPrivacyIdFromPrivilege(*iter, privacyId);
-		if (res == PRIV_GUARD_ERROR_SUCCESS)
-		{
+		if (res == PRIV_GUARD_ERROR_SUCCESS) {
 			PG_LOGD("Privacy[%s] from Privilege[%s]", privacyId.c_str(), iter->c_str());
 			privacyIdSet.insert(privacyId);
 		}
 	}
 
-	for (std::set< std::string >::iterator iter = privacyIdSet.begin(); iter != privacyIdSet.end(); ++iter)
-	{
+	for (std::set< std::string >::iterator iter = privacyIdSet.begin(); iter != privacyIdSet.end(); ++iter) {
 		privacyIdList.push_back(*iter);
 	}
 
@@ -163,41 +151,30 @@ PrivacyIdInfo::isValidPrivacyId(const std::string privacyId)
 int
 PrivacyIdInfo::getAllPrivacyId(std::list< std::string >& privacyIdList)
 {
-	static const std::string sql("SELECT PRIVACY_ID, FEATURE from PrivacyInfo");
-
 	if (!m_isInitialized)
 	{
 		initialize();
 	}
 
-	openDb(PRIVACY_INFO_DB_PATH, pDbHandler, SQLITE_OPEN_READONLY);
-	prepareDb(pDbHandler, sql.c_str(), pStmt);
+	GList *privacy_list = NULL;
+	GList *l = NULL;
 
-	int res;
-	while ((res = sqlite3_step(pStmt.get())) == SQLITE_ROW)
-	{
-		const char* privacyId = reinterpret_cast < const char* > (sqlite3_column_text(pStmt.get(), 0));
-		const char* feature = reinterpret_cast < const char* > (sqlite3_column_text(pStmt.get(), 1));
-		PG_LOGD("privacy: %s, feature: %s", privacyId, feature);
+	int ret = privilege_info_get_privacy_list(&privacy_list);
+	if (ret != PRVMGR_ERR_NONE) {
+		PG_LOGE("Failed to get privacy list from security-privilege-manager [%d].", ret);
+		return PRIV_GUARD_ERROR_INTERNAL_ERROR;
+	}
 
-		if  (feature != NULL)
-		{
-			bool isSupported = false;
-			res = isFeatureEnabled(feature, isSupported);
-			TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "isFeatureEnabled : %d", res);
-			if (!isSupported)
-			{
-				continue;
-			}
-		}
-
-		privacyIdList.push_back(std::string(privacyId));
-		PG_LOGD("privacy Id : %s", privacyId);
+	for (l = privacy_list; l != NULL; l = l->next) {
+		char *privacy_id = (char*)l->data;
+		PG_LOGD("[kylee] privacy_id: %s", privacy_id);
+		privacyIdList.push_back(std::string(privacy_id));
 	}
 
 	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
+/*
 int
 PrivacyIdInfo::getPrivaycDisplayName(const std::string privacyId, std::string& displayName)
 {
@@ -236,7 +213,9 @@ PrivacyIdInfo::getPrivaycDisplayName(const std::string privacyId, std::string& d
 
 	return PRIV_GUARD_ERROR_SUCCESS;
 }
+*/
 
+/*
 int
 PrivacyIdInfo::getPrivaycDescription(const std::string privacyId, std::string& displayName)
 {
@@ -268,8 +247,9 @@ PrivacyIdInfo::getPrivaycDescription(const std::string privacyId, std::string& d
 
 	return PRIV_GUARD_ERROR_SUCCESS;
 }
+*/
 
-int
+/*int
 PrivacyIdInfo::isFeatureEnabled(const char* feature, bool& enabled)
 {
 	int res = PRIV_GUARD_ERROR_SUCCESS;
@@ -285,3 +265,4 @@ PrivacyIdInfo::isFeatureEnabled(const char* feature, bool& enabled)
 
 	return PRIV_GUARD_ERROR_SUCCESS;
 }
+*/

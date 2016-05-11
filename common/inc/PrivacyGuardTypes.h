@@ -22,7 +22,6 @@
 #include "privacy_guard_client_types.h"
 
 #define PRIVACY_DB_PATH         tzplatform_mkpath(TZ_SYS_DB,".privacy_guard.db")
-#define PRIVACY_INFO_DB_PATH    tzplatform_mkpath(TZ_SYS_DB,".privacy_guard_privacylist.db")
 
 typedef struct _privacy_data_s {
 	char* privacy_id;

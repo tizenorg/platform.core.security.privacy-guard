@@ -21,30 +21,22 @@
 #include <memory>
 #include <list>
 #include <mutex>
+#include <glib.h>
 #include "ICommonDb.h"
 #include "privacy_guard_client_types.h"
 #include "PrivacyGuardTypes.h"
-
-#ifdef __FILTER_LISTED_PKG
-#include <map>
-#endif
 
 class PrivacyGuardDb : public ICommonDb
 {
 private:
 	static std::mutex m_singletonMutex;
 	static PrivacyGuardDb* m_pInstance;
-#ifdef __FILTER_LISTED_PKG
-    const static std::string PRIVACY_FILTER_LIST_FILE;
-    const static std::string FILTER_KEY;
-    static std::map < std::string, bool > m_filteredPkgList;
-#endif
+	static GList *m_privacy_list;
+	bool m_bInitialized;
 
 private:
-	void createDB(void);
-
 	PrivacyGuardDb(void);
-
+	void initialize(void);
 	~PrivacyGuardDb(void);
 
 public:

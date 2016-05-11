@@ -47,7 +47,7 @@ IF(PRIVACY_POPUP)
 ENDIF(PRIVACY_POPUP)
 
 ###################################################################################################
-## for libprivacy-guard-client (executable)
+## for libprivacy-guard-client
 INCLUDE_DIRECTORIES(${pkgs_INCLUDE_DIRS} ${client_include_dir} ${common_include_dir} ${extern_include_dir})
 SET(PRIVACY_GUARD_CLIENT_SOURCES
 	${common_src_dir}/SocketConnection.cpp

@@ -24,6 +24,7 @@ BuildRequires:  pkgconfig(pkgmgr-info)
 BuildRequires:  pkgconfig(sqlite3)
 BuildRequires:	pkgconfig(capi-system-info)
 BuildRequires:	pkgconfig(libtzplatform-config)
+BuildRequires:	pkgconfig(security-privilege-manager)
 #BuildRequires:	pkgconfig(cynara-monitor)
 
 Requires(post):   /sbin/ldconfig
@@ -77,7 +78,6 @@ make %{?_smp_mflags}
 mkdir -p %{buildroot}%{_prefix}/bin
 cp res/usr/bin/* %{buildroot}%{_bindir}/
 mkdir -p %{buildroot}%{TZ_SYS_DB}
-cp res/opt/dbspace/.privacy_guard_privacylist.db /%{buildroot}%{TZ_SYS_DB}
 
 %make_install
 mkdir -p %{buildroot}%{_libdir}/systemd/system/multi-user.target.wants
@@ -86,7 +86,6 @@ ln -sf /usr/lib/systemd/system/privacy-guard-server.service %{buildroot}%{_libdi
 mkdir -p %{buildroot}%{_libdir}/systemd/system/socket.target.wants
 install -m 0644 %{SOURCE2} %{buildroot}%{_libdir}/systemd/system/privacy-guard-server.socket
 ln -sf /usr/lib/systemd/system/privacy-guard-server.socket %{buildroot}%{_libdir}/systemd/system/socket.target.wants/privacy-guard-server.socket
-
 
 %post -n privacy-guard-server
 /sbin/ldconfig
@@ -110,7 +109,7 @@ fi
 %defattr(-,root,root,-)
 %license  LICENSE.APLv2
 %manifest privacy-guard-server.manifest
-%{TZ_SYS_DB}/.privacy_guard_privacylist.db
+#%{TZ_SYS_DB}/.privacy_guard_privacylist.db
 %{_bindir}/*
 %{_libdir}/systemd/system/*
 

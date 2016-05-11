@@ -127,7 +127,7 @@ PrivacyChecker::getMonitorPolicy(const int userId, const std::string packageId, 
 		monitorPolicy = 0;
 		res = PRIV_GUARD_ERROR_NO_DATA;
 	}
-	PG_LOGD("Here3");
+
 	return res;
 }
 
