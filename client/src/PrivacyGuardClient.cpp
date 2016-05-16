@@ -21,7 +21,8 @@
 #include "SocketClient.h"
 #include "PrivacyIdInfo.h"
 
-#define COUNT 10
+//#define COUNT 10
+#define COUNT 1
 
 #undef __READ_DB_IPC__
 
@@ -48,19 +49,19 @@ int
 PrivacyGuardClient::PgAddPrivacyAccessLog(const int userId, const std::string packageId, const std::string privacyId)
 {
 	int result = PRIV_GUARD_ERROR_SUCCESS;
-	logInfoList.push_back(std::pair <std::string, std::string> (packageId, privacyId));
-	PG_LOGD("PrivacyGuardClient userId : %d, PgAddPrivacyAccessLog logInfoList.size() : %d", userId, logInfoList.size());
+	m_logInfoList.push_back(std::pair <std::string, std::string> (packageId, privacyId));
+	PG_LOGD("PrivacyGuardClient userId : %d, PgAddPrivacyAccessLog m_logInfoList.size() : %d", userId, m_logInfoList.size());
 
-	if(logInfoList.size() >= COUNT) {
+	if(m_logInfoList.size() >= COUNT) {
 		int res = m_pSocketClient->connect();
 		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "connect : %d", res);
 
-		res = m_pSocketClient->call("PgAddPrivacyAccessLog", userId, logInfoList, &result);
+		res = m_pSocketClient->call("PgAddPrivacyAccessLog", userId, m_logInfoList, &result);
 		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, m_pSocketClient->disconnect(), "call : %d", res);
 
 		res = m_pSocketClient->disconnect();
 		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "disconnect : %d", res);
-		logInfoList.clear();
+		m_logInfoList.clear();
 	}
 
 	return result;
@@ -87,18 +88,18 @@ int
 PrivacyGuardClient::PgAddPrivacyAccessLogBeforeTerminate(void)
 {
 	int result = PRIV_GUARD_ERROR_SUCCESS;
-	PG_LOGD("PgAddPrivacyAccessLogBeforeTerminate, logInfoList.size() : %d", logInfoList.size());
+	PG_LOGD("PgAddPrivacyAccessLogBeforeTerminate, m_logInfoList.size() : %d", m_logInfoList.size());
 
-	if(logInfoList.size() > 0) {
+	if(m_logInfoList.size() > 0) {
 		int res = m_pSocketClient->connect();
 		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "connect : %d", res);
 
-		res = m_pSocketClient->call("PgAddPrivacyAccessLog", logInfoList, &result);
+		res = m_pSocketClient->call("PgAddPrivacyAccessLog", m_logInfoList, &result);
 		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, m_pSocketClient->disconnect(), "call : %d", res);
 
 		res = m_pSocketClient->disconnect();
 		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "disconnect : %d", res);
-		logInfoList.clear();
+		m_logInfoList.clear();
 	}
 
 	return result;
@@ -107,6 +108,8 @@ PrivacyGuardClient::PgAddPrivacyAccessLogBeforeTerminate(void)
 int
 PrivacyGuardClient::PgAddMonitorPolicy(const int userId, const std::string pkgId, const std::list < std::string >& list, int monitorPolicy)
 {
+	PG_LOGD("userID: [%d], packageID[%s], monitorPolicy: [%d]", userId, pkgId.c_str(), monitorPolicy);
+
 	std::list < std::string > privacyList;
 
 	int res = PrivacyIdInfo::getPrivacyIdListFromPrivilegeList(list, privacyList);
@@ -276,7 +279,7 @@ PrivacyGuardClient::PgForeachPrivacyPackageId(const int userId, std::list < std:
 }
 
 int
-PrivacyGuardClient::PgForeachPackageByPrivacyId(const int userId, const std::string privacyId, std::list < std::string > & packageList) const
+PrivacyGuardClient::PgForeachPackageInfoByPrivacyId(const int userId, const std::string privacyId, std::list < package_data_s > & packageInfoList) const
 {
 	int result = PRIV_GUARD_ERROR_SUCCESS;
 
@@ -288,7 +291,7 @@ PrivacyGuardClient::PgForeachPackageByPrivacyId(const int userId, const std::str
 	int res = m_pSocketClient->connect();
 	TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "connect : %d", res);
 
-	res = m_pSocketClient->call("PgForeachPackageByPrivacyId", userId, privacyId, &result, &packageList);
+	res = m_pSocketClient->call("PgForeachPackageInfoByPrivacyId", userId, privacyId, &result, &packageInfoList);
 	TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, m_pSocketClient->disconnect(), "call : %d", res);
 
 	res = m_pSocketClient->disconnect();

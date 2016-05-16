@@ -215,18 +215,18 @@ PrivacyInfoService::PgGetAllMonitorPolicy(SocketConnection* pConnector)
 }
 
 void
-PrivacyInfoService::PgForeachPackageByPrivacyId(SocketConnection* pConnector)
+PrivacyInfoService::PgForeachPackageInfoByPrivacyId(SocketConnection* pConnector)
 {
 	int userId = 0;
 	std::string privacyId;
-	std::list < std::string > packageList;
+	std::list < package_data_s > packageInfoList;
 
 	pConnector->read(&userId, &privacyId);
 
-	int result = PrivacyGuardDb::getInstance()->PgForeachPackageByPrivacyId(userId, privacyId, packageList);
+	int result = PrivacyGuardDb::getInstance()->PgForeachPackageInfoByPrivacyId(userId, privacyId, packageInfoList);
 
 	pConnector->write(result);
-	pConnector->write(packageList);
+	pConnector->write(packageInfoList);
 }
 
 void

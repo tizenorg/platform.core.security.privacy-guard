@@ -36,7 +36,7 @@ private:
 
 	static std::mutex m_singletonMutex;
 
-	std::list <std::pair<std::string, std::string>> logInfoList;
+	std::list <std::pair<std::string, std::string>> m_logInfoList;
 
 	PrivacyGuardClient();
 	~PrivacyGuardClient();
@@ -68,7 +68,7 @@ public:
 
 	int PgForeachPrivacyPackageId(const int userId, std::list < std::string > & packageList) const;
 
-	int PgForeachPackageByPrivacyId(const int userId, const std::string privacyId, std::list < std::string > & packageList) const;
+	int PgForeachPackageInfoByPrivacyId(const int userId, const std::string privacyId, std::list < package_data_s > & packageList) const;
 
 	int PgForeachMonitorPolicyByPackageId(const int userId, const std::string packageId,
 		std::list <privacy_data_s> & privacyInfoList) const;

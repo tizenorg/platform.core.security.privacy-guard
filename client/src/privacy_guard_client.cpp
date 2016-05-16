@@ -238,7 +238,9 @@ int privacy_guard_client_foreach_privacy_count_by_package_id(const int user_id, 
 
 int privacy_guard_client_add_monitor_policy(const int user_id, const char *package_id, const char **privilege_list, const int monitor_policy)
 {
-	if (user_id < 0 || package_id == NULL) {
+	PG_LOGD("user_id: [%d], package_id: [%s], monitor_policy: [%d]", user_id, package_id, monitor_policy);
+
+	if (user_id < 0 || package_id == NULL || privilege_list == NULL) {
 		PG_LOGE("Invalid parameters.");
 		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
 	}
@@ -359,7 +361,7 @@ int privacy_guard_client_foreach_privacy_package_id(const int user_id, privacy_g
 	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
-int privacy_guard_client_foreach_package_by_privacy_id(const int user_id, const char *privacy_id, privacy_guard_client_package_id_cb callback, void *user_data)
+int privacy_guard_client_foreach_package_info_by_privacy_id(const int user_id, const char *privacy_id, privacy_guard_client_package_info_cb callback, void *user_data)
 {
 	if (user_id < 0 || privacy_id == NULL) {
 		PG_LOGE("Invalid parameters.");
@@ -368,20 +370,19 @@ int privacy_guard_client_foreach_package_by_privacy_id(const int user_id, const 
 
 	PrivacyGuardClient* pInst = PrivacyGuardClient::getInstance();
 
-	std::list < std::string > packageList;
+	std::list <package_data_s> packageInfoList;
 
-	int retval = pInst->PgForeachPackageByPrivacyId(user_id, std::string(privacy_id), packageList);
+	int retval = pInst->PgForeachPackageInfoByPrivacyId(user_id, std::string(privacy_id), packageInfoList);
 	if (retval != PRIV_GUARD_ERROR_SUCCESS) {
-		PG_LOGE("Failed to do PrivacyGuardClient::PgForeachPackageByPrivacyId(). [%d]", retval);
+		PG_LOGE("Failed to do PrivacyGuardClient::PgForeachPackageInfoByPrivacyId(). [%d]", retval);
 		return retval;
 	}
 
-	if (packageList.size() == 0)
+	if (packageInfoList.size() == 0)
 		return PRIV_GUARD_ERROR_NO_DATA;
 
-	for (std::list < std::string >::iterator iter = packageList.begin(); iter != packageList.end(); ++iter) {
-		PG_LOGD("package_id: %s", iter->c_str());
-		bool ret = callback(iter->c_str(), user_data);
+	for (std::list < package_data_s >::iterator iter = packageInfoList.begin(); iter != packageInfoList.end(); ++iter) {
+		bool ret = callback(iter->package_id, iter->count, iter->monitor_policy, user_data);
 		if (ret == false)
 			break;
 	}

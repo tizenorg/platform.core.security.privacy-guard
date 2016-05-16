@@ -195,6 +195,35 @@ public:
 
 		return PRIV_GUARD_ERROR_SUCCESS;
 	}
+
+	int read(package_data_s& out)
+	{
+		int length = 0;
+		int res = 0;
+		char* pBuf;
+
+		// package id
+		res = m_socketStream.readStream(sizeof(length), &length);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "readStream : %d", res);
+		pBuf = new (std::nothrow) char[length + 1];
+		TryReturn(pBuf != NULL, PRIV_GUARD_ERROR_OUT_OF_MEMORY, , "new : %d", PRIV_GUARD_ERROR_OUT_OF_MEMORY);
+		m_socketStream.readStream(length, pBuf);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, delete[] pBuf, "readStream : %d", res);
+		pBuf[length] = 0;
+		out.package_id = strdup(pBuf);
+		delete[] pBuf;
+
+		// monitor policy
+		res = read(&(out.monitor_policy));
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "readStream : %d", res);
+
+		// count
+		res = read(&(out.count));
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "readStream : %d", res);
+
+		return PRIV_GUARD_ERROR_SUCCESS;
+	}
+
 	template < typename T >
 	int  read (std::list<T>& list)
 	{
@@ -330,6 +359,28 @@ public:
 
 		return PRIV_GUARD_ERROR_SUCCESS;
 	}
+
+	int write(const package_data_s& in)
+	{
+		// package id
+		int length = strlen(in.package_id);
+		int res = 0;
+		res = m_socketStream.writeStream(sizeof(length), &length);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "writeStream : %d", res);
+		res = m_socketStream.writeStream(length, in.package_id);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "writeStream : %d", res);
+
+		// monitor policy
+		res = write(in.monitor_policy);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "write : %d", res);
+
+		// count
+		res = write(in.count);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "write : %d", res);
+
+		return PRIV_GUARD_ERROR_SUCCESS;
+	}
+
 	template<typename T, typename ...Args>
 	int write(const T* in, const Args&... args)
 	{

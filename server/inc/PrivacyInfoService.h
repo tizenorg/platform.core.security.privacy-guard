@@ -41,7 +41,7 @@ public:
 		pSocketService->registerServiceCallback(getInterfaceName(), std::string("PgForeachPrivacyCountByPrivacyId"), PgForeachPrivacyCountByPrivacyId);
 		pSocketService->registerServiceCallback(getInterfaceName(), std::string("PgForeachPrivacyCountByPackageId"), PgForeachPrivacyCountByPackageId);
 		pSocketService->registerServiceCallback(getInterfaceName(), std::string("PgForeachPrivacyPackageId"), PgForeachPrivacyPackageId);
-		pSocketService->registerServiceCallback(getInterfaceName(), std::string("PgForeachPackageByPrivacyId"), PgForeachPackageByPrivacyId);
+		pSocketService->registerServiceCallback(getInterfaceName(), std::string("PgForeachPackageInfoByPrivacyId"), PgForeachPackageInfoByPrivacyId);
 		pSocketService->registerServiceCallback(getInterfaceName(), std::string("PgForeachMonitorPolicyByPackageId"), PgForeachMonitorPolicyByPackageId);
 		pSocketService->registerServiceCallback(getInterfaceName(), std::string("PgGetMonitorPolicy"), PgGetMonitorPolicy);
 		pSocketService->registerServiceCallback(getInterfaceName(), std::string("PgGetAllMonitorPolicy"), PgGetAllMonitorPolicy);
@@ -63,7 +63,7 @@ public:
 	static void PgForeachPrivacyCountByPrivacyId(SocketConnection* pConnector);
 	static void PgForeachPrivacyCountByPackageId(SocketConnection* pConnector);
 	static void PgForeachPrivacyPackageId(SocketConnection* pConnector);
-	static void PgForeachPackageByPrivacyId(SocketConnection* pConnector);
+	static void PgForeachPackageInfoByPrivacyId(SocketConnection* pConnector);
 	static void PgForeachMonitorPolicyByPackageId(SocketConnection* pConnector);
 	static void PgGetMonitorPolicy(SocketConnection* pConnector);
 	static void PgGetAllMonitorPolicy(SocketConnection* pConnector);

@@ -57,6 +57,22 @@ typedef bool (*privacy_guard_client_monitor_policy_cb) (const char *privacy_id, 
 typedef bool (*privacy_guard_client_package_id_cb) (const char *package_id, void *user_data);
 
 /**
+ * @brief	Called when the reply of the package id request is delivered.
+ * @since	tizen 3.0
+ *
+ * @param[in] package_id		The package ID
+ * @param[in] count				The privacy count
+ * @param[in] monitor_policy	The monitor policy (0 or 1)
+ * @param[in] user_data	The user data passed from the callback registration function
+ *
+ * @returns: true to continue with the next iteration of the loop, otherwise return false to break out of the loop
+ *
+ * @see	privacy_guard_client_foreach_package_info_by_privacy_id()
+ */
+typedef bool (*privacy_guard_client_package_info_cb) (const char *package_id, const int count, const int monitor_policy, void *user_data);
+
+
+/**
  * @brief	Called when the reply of the privacy count request is delivered.
  * @since	tizen 3.0
  *
@@ -172,13 +188,13 @@ EXTERN_API int privacy_guard_client_foreach_privacy_package_id(const int user_id
 
 /**
  * @fn int privacy_guard_client_foreach_package_by_privacy_id(const int user_id, const char *privacy_id, privacy_guard_client_package_id_cb callback, void *user_data)
- * @brief get package using specified privacy
+ * @brief get package info (package_id, count, monitor_enable) using specified privacy
  * @param[in] user_id 		The user ID
  * @param[in] privacy_id 	The privacy ID
  * @param[in] callback 		The callback function to invoke
  * @param[in] user_data The user data to be passed to the callback function
  */
-EXTERN_API int privacy_guard_client_foreach_package_by_privacy_id(const int user_id, const char *privacy_id, privacy_guard_client_package_id_cb callback, void *user_data);
+EXTERN_API int privacy_guard_client_foreach_package_info_by_privacy_id(const int user_id, const char *privacy_id, privacy_guard_client_package_info_cb callback, void *user_data);
 
 /**
  * @fn int privacy_guard_client_update_main_monitor_policy(const int user_id, const bool main_monitor_policy)

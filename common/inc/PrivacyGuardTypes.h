@@ -24,9 +24,16 @@
 #define PRIVACY_DB_PATH         tzplatform_mkpath(TZ_SYS_DB,".privacy_guard.db")
 
 typedef struct _privacy_data_s {
-	char* privacy_id;
+	char *privacy_id;
 	int monitor_policy;
 } privacy_data_s;
+
+typedef struct _package_data_s {
+	char *package_id;
+	int count;
+	int monitor_policy;
+} package_data_s;
+
 
 static const std::string SERVER_ADDRESS ("/tmp/privacy_guard_server");
 static const std::string DBUS_PATH("/privacy_guard/dbus_notification");

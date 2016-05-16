@@ -25,7 +25,7 @@ BuildRequires:  pkgconfig(sqlite3)
 BuildRequires:	pkgconfig(capi-system-info)
 BuildRequires:	pkgconfig(libtzplatform-config)
 BuildRequires:	pkgconfig(security-privilege-manager)
-#BuildRequires:	pkgconfig(cynara-monitor)
+BuildRequires:	pkgconfig(cynara-monitor)
 
 Requires(post):   /sbin/ldconfig
 Requires(postun): /sbin/ldconfig

@@ -20,6 +20,7 @@
 #include <dbus/dbus-glib-lowlevel.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <privilege_info.h>
 #include "PrivacyChecker.h"
 #include "PrivacyIdInfo.h"
 #include "PrivacyGuardClient.h"
@@ -96,20 +97,22 @@ PrivacyChecker::printMonitorPolicyCache(void)
 int
 PrivacyChecker::initMonitorPolicyCache(void)
 {
-	PG_LOGD("PrivacyChecker::initCache");
-
 	std::list < std::pair < std::string, int > > monitorPolicyList;
+
 	int retval = PrivacyGuardClient::getInstance()->PgGetAllMonitorPolicy(monitorPolicyList);
 	if(retval == PRIV_GUARD_ERROR_SUCCESS && !monitorPolicyList.empty()) {
 		m_monitorPolicyCache.insert(monitorPolicyList.begin(), monitorPolicyList.end());
+	} else {
+		PG_LOGD("ret: [%d], monitorPolicyList size: [%d]", retval, monitorPolicyList.size());
 	}
+
 	return retval;
 }
 
 int
 PrivacyChecker::getMonitorPolicy(const int userId, const std::string packageId, const std::string privacyId, int &monitorPolicy)
 {
-	PG_LOGD("getMonitorPolicy m_isInitialized : %d", m_isInitialized);
+	PG_LOGD("m_isInitialized: %d", m_isInitialized);
 
 	if (m_isInitialized == false) {
 		initialize();
@@ -117,7 +120,7 @@ PrivacyChecker::getMonitorPolicy(const int userId, const std::string packageId, 
 //	printMonitorPolicyCache();
 
 	std::string userPkgIdPrivacyId = std::to_string(userId) + std::string("|") + packageId + std::string("|") + privacyId;
-	PG_LOGD("key : %s", userPkgIdPrivacyId.c_str());
+	PG_LOGD("key: %s", userPkgIdPrivacyId.c_str());
 	std::map<std::string, int>::iterator itr = m_monitorPolicyCache.find(userPkgIdPrivacyId);
 	int res = PRIV_GUARD_ERROR_SUCCESS;
 	if(itr != m_monitorPolicyCache.end()) {
@@ -134,22 +137,13 @@ PrivacyChecker::getMonitorPolicy(const int userId, const std::string packageId, 
 void
 PrivacyChecker::checkMonitorByPrivilege(const std::string privilegeId)
 {
-	PG_LOGD("checkMonitorByPrivilege");
+	PG_LOGD("checkMonitorByPrivilege called with privilege: [%s]", privilegeId.c_str());
 
-	if(privilegeId.compare("http://tizen.org/privilege/calendar.read") == 0 ||
-			privilegeId.compare("http://tizen.org/privilege/calendar.write") == 0 ||
-			privilegeId.compare("http://tizen.org/privilege/contact.read") == 0 ||
-			privilegeId.compare("http://tizen.org/privilege/contact.write") == 0 ||
-			privilegeId.compare("http://tizen.org/privilege/location") == 0 ||
-			privilegeId.compare("http://tizen.org/privilege/messaging.write") == 0 ||
-			privilegeId.compare("http://tizen.org/privilege/messaging.read") == 0 ||
-			privilegeId.compare("http://tizen.org/privilege/messaging.send") == 0 ||
-			privilegeId.compare("http://tizen.org/privilege/messaging.sms") == 0 ||
-			privilegeId.compare("http://tizen.org/privilege/messaging.mms") == 0 ||
-			privilegeId.compare("http://tizen.org/privilege/messaging.email") == 0) {
+	if (privilege_info_is_privacy(privilegeId.c_str())) {
 		m_isMonitorEnable = true;
 	}
 	else {
+		PG_LOGD("[%s] is not related to a privacy.", privilegeId.c_str());
 		m_isMonitorEnable = false;
 	}
 }

@@ -80,7 +80,7 @@ public:
 
 	int PgForeachPrivacyPackageId(const int userId, std::list < std::string > & packageList);
 
-	int PgForeachPackageByPrivacyId(const int userId, const std::string privacyId, std::list < std::string > &packageList);
+	int PgForeachPackageInfoByPrivacyId(const int userId, const std::string privacyId, std::list < package_data_s > &packageList);
 
 	int PgUpdateMonitorPolicy(const int userId, const std::string packageId, const std::string privacyId, const int monitorPolicy);
 

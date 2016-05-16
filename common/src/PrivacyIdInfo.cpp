@@ -40,8 +40,6 @@ PrivacyIdInfo::initialize(void)
 
 	for (l = privacy_list; l != NULL; l = l->next) {
 		char *privacy_id = (char*)l->data;
-		PG_LOGD("privacy_id: %s", privacy_id);
-
 		ret = privilege_info_get_privilege_list_by_privacy(privacy_id, &privilege_list);
 		if (ret != PRVMGR_ERR_NONE) {
 			PG_LOGE("Failed to get privilege list from security-privilege-manager [%d] using privacy[%s].", ret, privacy_id);
@@ -120,7 +118,7 @@ PrivacyIdInfo::getPrivacyIdListFromPrivilegeList(const std::list< std::string > 
 		std::string privacyId;
 		int res = getPrivacyIdFromPrivilege(*iter, privacyId);
 		if (res == PRIV_GUARD_ERROR_SUCCESS) {
-			PG_LOGD("Privacy[%s] from Privilege[%s]", privacyId.c_str(), iter->c_str());
+			PG_LOGD("Privacy ID [%s] from Privilege [%s]", privacyId.c_str(), iter->c_str());
 			privacyIdSet.insert(privacyId);
 		}
 	}
