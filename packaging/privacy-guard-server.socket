@@ -2,8 +2,8 @@
 Description=Privacy Guard Socket
 
 [Socket]
-SocketUser=system
-SocketGroup=system
+SocketUser=security_fw
+SocketGroup=security_fw
 ListenStream=/tmp/privacy_guard_server
 SocketMode=0777
 

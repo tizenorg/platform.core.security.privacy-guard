@@ -23,8 +23,8 @@ do
     SQL=".read ${TZ_SYS_BIN}/"$name"_db.sql"
     sqlite3 ${TZ_SYS_DB}/.$name.db "$SQL"
     touch ${TZ_SYS_DB}/.$name.db-journal
-    chown system:system ${TZ_SYS_DB}/.$name.db
-    chown system:system ${TZ_SYS_DB}/.$name.db-journal
+    chown security_fw:security_fw ${TZ_SYS_DB}/.$name.db
+    chown security_fw:security_fw ${TZ_SYS_DB}/.$name.db-journal
     chmod 666 ${TZ_SYS_DB}/.$name.db
     chmod 666 ${TZ_SYS_DB}/.$name.db-journal
 done

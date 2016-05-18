@@ -14,8 +14,8 @@
  *    limitations under the License.
  */
 
-#ifndef _CYNARASERVICE_H_
-#define _CYNARASERVICE_H_
+#ifndef _CYNARA_SERVICE_H_
+#define _CYNARA_SERVICE_H_
 
 #include <string>
 #include <mutex>
@@ -33,7 +33,7 @@ private:
 
 private:
 	static void* getEntriesThread(void* );
-	static void* flushThread(void* );
+//	static void* flushThread(void* );
 public:
 	CynaraService(void);
 	~CynaraService(void);
@@ -44,4 +44,4 @@ public:
 	static int updateDb(cynara_monitor_entry** monitor_entries);
 };
 
-#endif //_CYNARASERVICE_H_
+#endif //_CYNARA_SERVICE_H_

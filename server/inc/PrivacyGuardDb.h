@@ -14,8 +14,8 @@
  *    limitations under the License.
  */
 
-#ifndef _PRIVACYGUARDDB_H_
-#define _PRIVACYGUARDDB_H_
+#ifndef _PRIVACY_GUARD_DB_H_
+#define _PRIVACY_GUARD_DB_H_
 
 #include <string>
 #include <memory>
@@ -46,7 +46,7 @@ public:
 
 	int PgAddPrivacyAccessLog(const int userId, std::list < std::pair < std::string, std::string > > logInfoList);
 
-	int PgAddPrivacyAccessLogForCynara(const int userId, const std::string packageId, const std::string privilege, const timespec *timestamp);
+	int PgAddPrivacyAccessLogForCynara(const int userId, const std::string packageId, const std::string privilege, const time_t timestamp);
 
 	int PgAddPrivacyAccessLogTest(const int userId, const std::string packageId, const std::string privacyId);
 
@@ -94,4 +94,4 @@ public:
 };
 
 
-#endif // _PRIVACYGUARDDB_H_
+#endif // _PRIVACY_GUARD_DB_H_

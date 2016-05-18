@@ -2,8 +2,8 @@
 Description=Privacy Guard Server
 
 [Service]
-User=system
-Group=system
+User=security_fw
+Group=security_fw
 Type=simple
 ExecStart=/usr/bin/privacy-guard-server
 Sockets=privacy-guard-server.socket

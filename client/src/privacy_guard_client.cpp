@@ -118,7 +118,7 @@ int privacy_guard_client_foreach_total_privacy_count_of_package(const int user_i
 		const time_t end_date, privacy_guard_client_privacy_count_of_package_cb callback, void *user_data)
 {
 	if (user_id < 0 || start_date > end_date || start_date <= 0) {
-		PG_LOGE("Invalid parameters.");
+		PG_LOGE("Invalid parameters. user id: [%d], start date: [%d], end date: [%d]", user_id, start_date, end_date);
 		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
 	}
 

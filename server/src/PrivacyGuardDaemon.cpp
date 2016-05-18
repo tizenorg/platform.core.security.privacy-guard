@@ -18,10 +18,8 @@
 #include "PrivacyGuardDaemon.h"
 #include "PrivacyInfoService.h"
 #include "SocketService.h"
-#if 0
 // [CYNARA]
 #include <CynaraService.h>
-#endif
 
 PrivacyGuardDaemon* PrivacyGuardDaemon::pInstance = NULL;
 
@@ -37,6 +35,8 @@ PrivacyGuardDaemon::~PrivacyGuardDaemon(void)
 PrivacyGuardDaemon*
 PrivacyGuardDaemon::getInstance(void)
 {
+	PG_LOGD("called");
+
 	if (pInstance == NULL)
 		pInstance = new PrivacyGuardDaemon();
 	return pInstance;
@@ -45,20 +45,23 @@ PrivacyGuardDaemon::getInstance(void)
 int
 PrivacyGuardDaemon::initialize(void)
 {
+	PG_LOGD("called");
+
 	if (pSocketService == NULL)
 		pSocketService = new SocketService();
-#if 0
+
+	PG_LOGD("calling pSocketService->initialize()");
+	pSocketService->initialize();
+
+	PG_LOGD("calling PrivacyInfoService::registerCallbacks(pSocketService)");
+	PrivacyInfoService::registerCallbacks(pSocketService);
+
 	// [CYNARA]
 	if (pCynaraService == NULL)
 		pCynaraService = new CynaraService();
-#endif
-	pSocketService->initialize();
-#if 0
-	// [CYNARA]
-	pCynaraService->initialize();
-#endif
 
-	PrivacyInfoService::registerCallbacks(pSocketService);
+	PG_LOGD("calling pCynaraService->initialize()");
+	pCynaraService->initialize();
 
 	return 0;
 }
@@ -68,32 +71,34 @@ PrivacyGuardDaemon::start(void)
 {
 	int res = 0;
 
+	PG_LOGD("calling pSocketService->start()");
 	if (pSocketService == NULL)
 		return PRIV_GUARD_ERROR_NOT_INITIALIZED;
 	res = pSocketService->start();
 	if(res != PRIV_GUARD_ERROR_SUCCESS){
 		PG_LOGE("FAIL");
 	}
-#if 0
+
 	// [CYNARA]
+/*	PG_LOGD("calling pCynaraService->start()");
 	if (pCynaraService == NULL)
 		return PRIV_GUARD_ERROR_NOT_INITIALIZED;
 	res = pCynaraService->start();
 	if(res != PRIV_GUARD_ERROR_SUCCESS){
 		PG_LOGE("FAIL");
 	}
-#endif
+*/
 	return res;
 }
 
 int
 PrivacyGuardDaemon::stop(void)
 {
+	PG_LOGD("calling pSocketService->stop()");
 	pSocketService->stop();
-#if 0
-	// [CYNARA]
-	pCynaraService->stop();
-#endif
+
+//	PG_LOGD("calling pCynaraService->stop()");
+//	pCynaraService->stop();
 
 	return 0;
 }
@@ -101,6 +106,10 @@ PrivacyGuardDaemon::stop(void)
 int
 PrivacyGuardDaemon::shutdown(void)
 {
+	PG_LOGD("calling pSocketService->shutdown()");
 	pSocketService->shutdown();
+//	PG_LOGD("calling pCynaraService->shutdown()");
+//	pCynaraService->shutdown();
+
 	return 0;
 }
