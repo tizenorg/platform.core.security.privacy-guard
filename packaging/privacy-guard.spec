@@ -97,6 +97,7 @@ then
 	%{_bindir}/privacy_guard_create_clean_db.sh
 fi
 chsmack -a System %{TZ_SYS_DB}/.privacy_guard.db
+chsmack -a System %{TZ_SYS_DB}/.privacy_guard.db-journal
 
 %postun -p /sbin/ldconfig
 

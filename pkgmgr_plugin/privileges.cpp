@@ -45,6 +45,20 @@ void destroy_char_list(char** ppList, int size)
 
 extern "C"
 __attribute__ ((visibility("default")))
+int PKGMGR_PARSER_PLUGIN_PRE_INSTALL(const char *packageId)
+{
+	if (packageId == NULL) {
+		LOGE("Package ID is NULL");
+		return -EINVAL;
+	}
+
+	LOGD("PKGMGR_PARSER_PLUGIN_PRE_INSTALL() called with [%s].", packageId);
+
+	return 0;
+}
+
+extern "C"
+__attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 {
 	if (packageId == NULL) {
@@ -121,6 +135,35 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 
 extern "C"
 __attribute__ ((visibility("default")))
+int PKGMGR_PARSER_PLUGIN_POST_INSTALL(const char *packageId)
+{
+	if (packageId == NULL) {
+		LOGE("Package ID is NULL");
+		return -EINVAL;
+	}
+
+	LOGD("PKGMGR_PARSER_PLUGIN_POST_INSTALL() called with [%s].", packageId);
+
+	return 0;
+
+}
+
+extern "C"
+__attribute__ ((visibility("default")))
+int PKGMGR_PARSER_PLUGIN_PRE_UNINSTALL(const char *packageId)
+{
+	if (packageId == NULL) {
+		LOGE("Package ID is NULL");
+		return -EINVAL;
+	}
+
+	LOGD("PKGMGR_PARSER_PLUGIN_PRE_UNINSTALL() called with [%s].", packageId);
+
+	return 0;
+}
+
+extern "C"
+__attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_UNINSTALL(xmlDocPtr docPtr, const char* packageId)
 {
 	if (packageId == NULL) {
@@ -145,6 +188,20 @@ int PKGMGR_PARSER_PLUGIN_UNINSTALL(xmlDocPtr docPtr, const char* packageId)
 	}
 
 	LOGD("PKGMGR_PARSER_PLUGIN_UNINSTALL() end.");
+
+	return 0;
+}
+
+extern "C"
+__attribute__ ((visibility("default")))
+int PKGMGR_PARSER_PLUGIN_POST_UNINSTALL(const char *packageId)
+{
+	if (packageId == NULL) {
+		LOGE("Package ID is NULL");
+		return -EINVAL;
+	}
+
+	LOGD("PKGMGR_PARSER_PLUGIN_POST_UNINSTALL() called with [%s].", packageId);
 
 	return 0;
 }
