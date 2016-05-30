@@ -47,13 +47,6 @@ extern "C"
 __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_PRE_INSTALL(const char *packageId)
 {
-	if (packageId == NULL) {
-		LOGE("Package ID is NULL");
-		return -EINVAL;
-	}
-
-	LOGD("PKGMGR_PARSER_PLUGIN_PRE_INSTALL() called with [%s].", packageId);
-
 	return 0;
 }
 
@@ -137,28 +130,13 @@ extern "C"
 __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_POST_INSTALL(const char *packageId)
 {
-	if (packageId == NULL) {
-		LOGE("Package ID is NULL");
-		return -EINVAL;
-	}
-
-	LOGD("PKGMGR_PARSER_PLUGIN_POST_INSTALL() called with [%s].", packageId);
-
 	return 0;
-
 }
 
 extern "C"
 __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_PRE_UNINSTALL(const char *packageId)
 {
-	if (packageId == NULL) {
-		LOGE("Package ID is NULL");
-		return -EINVAL;
-	}
-
-	LOGD("PKGMGR_PARSER_PLUGIN_PRE_UNINSTALL() called with [%s].", packageId);
-
 	return 0;
 }
 
@@ -187,8 +165,6 @@ int PKGMGR_PARSER_PLUGIN_UNINSTALL(xmlDocPtr docPtr, const char* packageId)
 		return -EIO;
 	}
 
-	LOGD("PKGMGR_PARSER_PLUGIN_UNINSTALL() end.");
-
 	return 0;
 }
 
@@ -196,13 +172,13 @@ extern "C"
 __attribute__ ((visibility("default")))
 int PKGMGR_PARSER_PLUGIN_POST_UNINSTALL(const char *packageId)
 {
-	if (packageId == NULL) {
-		LOGE("Package ID is NULL");
-		return -EINVAL;
-	}
+	return 0;
+}
 
-	LOGD("PKGMGR_PARSER_PLUGIN_POST_UNINSTALL() called with [%s].", packageId);
-
+extern "C"
+__attribute__ ((visibility("default")))
+int PKGMGR_PARSER_PLUGIN_PRE_UPGRADE(const char *packageId)
+{
 	return 0;
 }
 
@@ -214,8 +190,6 @@ int PKGMGR_PARSER_PLUGIN_UPGRADE(xmlDocPtr docPtr, const char* packageId)
 		LOGE("Package ID is NULL");
 		return -EINVAL;
 	}
-
-	LOGD("PKGMGR_PARSER_PLUGIN_UPGRADE() called with [%s].", packageId);
 
 	int res = PKGMGR_PARSER_PLUGIN_UNINSTALL(docPtr, packageId);
 	if (res != 0) {
@@ -231,3 +205,11 @@ int PKGMGR_PARSER_PLUGIN_UPGRADE(xmlDocPtr docPtr, const char* packageId)
 
 	return res;
 }
+
+extern "C"
+__attribute__ ((visibility("default")))
+int PKGMGR_PARSER_PLUGIN_POST_UPGRADE(const char *packageId)
+{
+	return 0;
+}
+
