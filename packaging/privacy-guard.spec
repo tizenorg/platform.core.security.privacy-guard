@@ -1,5 +1,5 @@
 Name:           privacy-guard-server
-Version:        0.0.1
+Version:        0.0.5
 Release:        1
 License:        Apache-2.0
 Summary:        Privacy Management

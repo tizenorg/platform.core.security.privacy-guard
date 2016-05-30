@@ -17,20 +17,29 @@
 #include <glib.h>
 #include "PrivacyGuardDaemon.h"
 
+// [kylee76]temp
+#include "Utils.h"
+
 int
 main(int argc, char* argv[])
 {
+	PG_LOGD("called");
 	PrivacyGuardDaemon* pDaemon = PrivacyGuardDaemon::getInstance();
 
+	PG_LOGD("pDaemon->initialize()");
 	pDaemon->initialize();
+	PG_LOGD("pDaemon->start()");
 	pDaemon->start();
 
 	GMainLoop* pLoop;
 	pLoop = g_main_new(TRUE);
 
+	PG_LOGD("g_main_loop_run(pLoop)");
 	g_main_loop_run(pLoop);
 
+	PG_LOGD("pDaemon->stop()");
 	pDaemon->stop();
+	PG_LOGD("pDaemon->shutdown()");
 	pDaemon->shutdown();
 
 	return 0;

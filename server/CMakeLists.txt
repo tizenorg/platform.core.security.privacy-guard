@@ -8,6 +8,7 @@ SET(INCLUDEDIR "\${prefix}/include")
 
 INCLUDE(FindPkgConfig)
 pkg_check_modules(pkgs REQUIRED dlog sqlite3 dbus-1 dbus-glib-1 db-util pkgmgr-info capi-system-info libtzplatform-config security-privilege-manager cynara-monitor)
+#pkg_check_modules(pkgs REQUIRED dlog sqlite3 dbus-1 dbus-glib-1 db-util pkgmgr-info capi-system-info libtzplatform-config security-privilege-manager)
 
 FOREACH(flag ${pkgs_CFLAGS})
 	SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${flag}")
@@ -50,14 +51,14 @@ INCLUDE_DIRECTORIES(
 	${dbus_include_dir}
 	)
 
-SET(PRIVACY_GUARD_SERVER_SOURCES 
+SET(PRIVACY_GUARD_SERVER_SOURCES
 	${common_src_dir}/SocketConnection.cpp
 	${common_src_dir}/SocketStream.cpp
-	${common_src_dir}/PrivacyIdInfo.cpp	
+	${common_src_dir}/PrivacyIdInfo.cpp
 	${server_src_dir}/PrivacyGuardDb.cpp
 	${server_src_dir}/main.cpp
 	${server_src_dir}/SocketService.cpp
-#	${server_src_dir}/CynaraService.cpp
+	${server_src_dir}/CynaraService.cpp
 	${server_src_dir}/PrivacyGuardDaemon.cpp
 	${server_src_dir}/service/PrivacyInfoService.cpp
 	${server_src_dir}/NotificationServer.cpp

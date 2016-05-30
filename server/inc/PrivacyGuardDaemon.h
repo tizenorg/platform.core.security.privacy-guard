@@ -20,20 +20,16 @@
 #include "privacy_guard_client_types.h"
 
 class SocketService;
-#if 0
 // [CYNARA]
 class CynaraService;
-#endif
 
 class EXTERN_API PrivacyGuardDaemon
 {
 private:
 	static PrivacyGuardDaemon* pInstance;
 	SocketService* pSocketService;
-#if 0
-	// [CYNARA]	
+	// [CYNARA]
 	CynaraService* pCynaraService;
-#endif
 
 private:
 	PrivacyGuardDaemon(void);

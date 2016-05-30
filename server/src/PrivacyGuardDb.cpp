@@ -20,32 +20,47 @@
 #include <pkgmgr-info.h>
 #include <time.h>
 #include <privilege_info.h>
+#include <cynara-monitor.h>
 #include "Utils.h"
 #include "PrivacyGuardDb.h"
 #include "PrivacyIdInfo.h"
 
+
 #define PRIVACY_GUARD_DAYS 7
 #define UNIX_TIME_ONE_DAY (24 * 60 * 60) // 86400 secs
-
-#if 0
-// [CYNARA]
-#include "CynaraService.h"
-
-//static cynara_monitor_configuration *p_conf;
-static cynara_monitor *p_cynara_monitor;
-static cynara_monitor_entry **monitor_entries;
-#endif
 
 std::mutex PrivacyGuardDb::m_singletonMutex;
 PrivacyGuardDb* PrivacyGuardDb::m_pInstance = NULL;
 GList *PrivacyGuardDb::m_privacy_list = NULL;
 
+static cynara_monitor_configuration *p_conf;
+static cynara_monitor *p_cynara_monitor;
+
 void
 PrivacyGuardDb::initialize(void)
 {
+	m_bInitialized = false;
+
+	// get privacy list
 	int res = privilege_info_get_privacy_list(&m_privacy_list);
 	if (res != PRVMGR_ERR_NONE) {
 		PG_LOGE("Failed to get privacy list from security-privilege-manager [%d].", res);
+		//return PRIV_GUARD_ERROR_SYSTEM_ERROR;
+		return;
+	}
+
+	// cynara initialize
+	res = cynara_monitor_configuration_create(&p_conf);
+	if(res != CYNARA_API_SUCCESS){
+		PG_LOGE("cynara_monitor_configuration_create() is failed.");
+		//return PRIV_GUARD_ERROR_SYSTEM_ERROR;
+		return;
+	}
+
+	res = cynara_monitor_initialize(&p_cynara_monitor, p_conf);
+	if(res != CYNARA_API_SUCCESS){
+		PG_LOGE("cynara_monitor_initialize() is failed.");
+		//return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 		return;
 	}
 
@@ -129,29 +144,32 @@ PrivacyGuardDb::PgAddPrivacyAccessLog(const int userId, std::list < std::pair < 
 }
 
 int
-PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::string packageId, const std::string privilege, const timespec* timestamp)
+PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::string packageId, const std::string privilegeId, const time_t date)
 {
-	////////////////////////////////////////////////
-	// check userId, packageId, privilege here..
-	////////////////////////////////////////////////
-	if(timestamp->tv_sec <= 0) {
-		PG_LOGE("Invalid timestamp value: [%d]", timestamp->tv_sec);
+	if(userId < 0 || date <= 0) {
+		PG_LOGE("Invalid parameter: userId: [%d], date: [%d]", userId, date);
 		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
 	}
 
-	int res = SQLITE_OK;
+	int res = -1;
+	std::string privacyId;
 
 	// change from privilege to privacy
-	std::string privacyId;
-	res = PrivacyIdInfo::getPrivacyIdFromPrivilege(privilege, privacyId);
+	res = PrivacyIdInfo::getPrivacyIdFromPrivilege(privilegeId, privacyId);
 	if (res == PRIV_GUARD_ERROR_NO_DATA) {
+		PG_LOGD("Input privilege[%s] is not related to any privacy. So skip it.", privilegeId.c_str());
 		return PRIV_GUARD_ERROR_SUCCESS;
 	}
-	TryReturn( res == PRIV_GUARD_ERROR_SUCCESS, res, , "getPrivacyIdFromPrivilege : %d", res);
+	TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "getPrivacyIdFromPrivilege is failed: [%d]", res);
 
-	// change from timespec to time_t
-	time_t logging_date;
-	logging_date = timestamp->tv_sec;
+	// check monitor policy using userId, packageId, privacyId
+	int monitorPolicy;
+	res = PgGetMonitorPolicy(userId, packageId, privacyId, monitorPolicy);
+	TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "PgGetMonitorPolicy is failed: [%d]", res);
+	if (monitorPolicy == 0) {
+		PG_LOGD("Monitor Policy is 0. So skip it. UserId:[%d], PrivacyId:[%s], PackageId:[%s], Policy:[%d]", userId, privacyId.c_str(), packageId.c_str(), monitorPolicy);
+		return PRIV_GUARD_ERROR_SUCCESS;
+	}
 
 	static const std::string QUERY_INSERT = std::string("INSERT INTO StatisticsMonitorInfo(USER_ID, PKG_ID, PRIVACY_ID, USE_DATE) VALUES(?, ?, ?, ?)");
 
@@ -169,8 +187,6 @@ PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::stri
 	}
 	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
 
-	PG_LOGD("addlogToDb m_sqlHandler : %p", m_sqlHandler);
-
 	// prepare
 	res = sqlite3_prepare_v2(m_sqlHandler, QUERY_INSERT.c_str(), -1, &m_stmt, NULL);
 	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
@@ -185,7 +201,7 @@ PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::stri
 	res = sqlite3_bind_text(m_stmt, 3, privacyId.c_str(), -1, SQLITE_TRANSIENT);
 	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
-	res = sqlite3_bind_int(m_stmt, 4, logging_date);
+	res = sqlite3_bind_int(m_stmt, 4, date);
 	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 	res = sqlite3_step(m_stmt);
@@ -488,7 +504,6 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPackage(const int userId, const int 
 {
 	int res = -1;
 
-#if 0
 	// [CYNARA] Fluch Entries
 	int ret= cynara_monitor_entries_flush(p_cynara_monitor);
 	if(ret != CYNARA_API_SUCCESS){
@@ -496,7 +511,7 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPackage(const int userId, const int 
 		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 
-	// [CYNARA] Get Entries
+/*	// [CYNARA] Get Entries
 	ret = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
 	if(ret != CYNARA_API_SUCCESS){
 		PG_LOGE("cynara_monitor_entries_get FAIL");
@@ -509,8 +524,7 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPackage(const int userId, const int 
 		PG_LOGE("updateDb FAIL");
 		return ret;
 	}
-#endif
-
+*/
 	static const std::string PKGID_SELECT = std::string("SELECT DISTINCT PKG_ID FROM StatisticsMonitorInfo WHERE USER_ID=? AND USE_DATE>=? AND USE_DATE<=?");
 	static const std::string PKGINFO_SELECT = std::string("SELECT COUNT(*) FROM StatisticsMonitorInfo WHERE USER_ID=? AND PKG_ID=? AND USE_DATE>=? AND USE_DATE<=?");
 	sqlite3_stmt* infoStmt;
@@ -582,7 +596,6 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPrivacy(const int userId, const int 
 {
 	int res = -1;
 
-#if 0
 	// [CYNARA] Fluch Entries
 	int ret= cynara_monitor_entries_flush(p_cynara_monitor);
 	if(ret != CYNARA_API_SUCCESS){
@@ -590,7 +603,7 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPrivacy(const int userId, const int 
 		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 
-	// [CYNARA] Get Entries
+/*	// [CYNARA] Get Entries
 	ret = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
 	if(ret != CYNARA_API_SUCCESS){
 		PG_LOGE("cynara_monitor_entries_get FAIL");
@@ -603,8 +616,7 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPrivacy(const int userId, const int 
 		PG_LOGE("updateDb FAIL");
 		return ret;
 	}
-#endif
-
+*/
 	static const std::string PRIVACY_SELECT = std::string("SELECT COUNT(*) FROM StatisticsMonitorInfo WHERE USER_ID=? AND PRIVACY_ID=? AND USE_DATE>=? AND USE_DATE<=?");
 
 	m_dbMutex.lock();
@@ -663,7 +675,6 @@ PrivacyGuardDb::PgForeachPrivacyCountByPrivacyId(const int userId, const int sta
 {
 	int res = -1;
 
-#if 0
 	// [CYNARA] Fluch Entries
 	int ret= cynara_monitor_entries_flush(p_cynara_monitor);
 	if(ret != CYNARA_API_SUCCESS){
@@ -671,7 +682,7 @@ PrivacyGuardDb::PgForeachPrivacyCountByPrivacyId(const int userId, const int sta
 		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 
-	// [CYNARA] Get Entries
+/*	// [CYNARA] Get Entries
 	ret = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
 	if(ret != CYNARA_API_SUCCESS){
 		PG_LOGE("cynara_monitor_entries_get FAIL");
@@ -684,7 +695,7 @@ PrivacyGuardDb::PgForeachPrivacyCountByPrivacyId(const int userId, const int sta
 		PG_LOGE("updateDb FAIL");
 		return ret;
 	}
-#endif
+*/
 
 	static const std::string PKGID_SELECT = std::string("SELECT DISTINCT PKG_ID FROM StatisticsMonitorInfo WHERE USER_ID=? AND PRIVACY_ID=? AND USE_DATE>=? AND USE_DATE<=?");
 	static const std::string PKGINFO_SELECT = std::string("SELECT COUNT(*) FROM StatisticsMonitorInfo WHERE USER_ID=? AND PKG_ID=? AND PRIVACY_ID=? AND USE_DATE>=? AND USE_DATE<=?");
@@ -765,7 +776,6 @@ PrivacyGuardDb::PgForeachPrivacyCountByPackageId(const int userId, const int sta
 {
 	int res = -1;
 
-#if 0
 	// [CYNARA] Fluch Entries
 	int ret= cynara_monitor_entries_flush(p_cynara_monitor);
 	if(ret != CYNARA_API_SUCCESS){
@@ -773,7 +783,7 @@ PrivacyGuardDb::PgForeachPrivacyCountByPackageId(const int userId, const int sta
 		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 	}
 
-	// [CYNARA] Get Entries
+/*	// [CYNARA] Get Entries
 	ret = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
 	if(ret != CYNARA_API_SUCCESS){
 		PG_LOGE("cynara_monitor_entries_get FAIL");
@@ -786,7 +796,7 @@ PrivacyGuardDb::PgForeachPrivacyCountByPackageId(const int userId, const int sta
 		PG_LOGE("updateDb FAIL");
 		return ret;
 	}
-#endif
+*/
 
 	static const std::string PRIVACY_SELECT = std::string("SELECT COUNT(*) FROM StatisticsMonitorInfo WHERE USER_ID=? AND PKG_ID=? AND PRIVACY_ID=? AND USE_DATE>=? AND USE_DATE<=?");
 
@@ -1119,7 +1129,6 @@ PrivacyGuardDb::PgForeachPackageInfoByPrivacyId(const int userId, const std::str
 		}
 		sqlite3_reset(infoStmt);
 	}
-
 	m_dbMutex.unlock();
 
 	return PRIV_GUARD_ERROR_SUCCESS;
@@ -1364,6 +1373,7 @@ PrivacyGuardDb::~PrivacyGuardDb(void)
 	if (m_bInitialized == true) {
 		m_dbMutex.lock();
 		g_list_free(m_privacy_list);
+		cynara_monitor_configuration_destroy(p_conf);
 		m_bInitialized = false;
 		m_dbMutex.unlock();
 	}

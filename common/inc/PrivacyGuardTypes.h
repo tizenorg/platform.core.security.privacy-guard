@@ -23,6 +23,9 @@
 
 #define PRIVACY_DB_PATH         tzplatform_mkpath(TZ_SYS_DB,".privacy_guard.db")
 
+//#define CYNARA_BUFFER_SIZE 1024
+#define CYNARA_BUFFER_SIZE 10
+
 typedef struct _privacy_data_s {
 	char *privacy_id;
 	int monitor_policy;
@@ -33,7 +36,6 @@ typedef struct _package_data_s {
 	int count;
 	int monitor_policy;
 } package_data_s;
-
 
 static const std::string SERVER_ADDRESS ("/tmp/privacy_guard_server");
 static const std::string DBUS_PATH("/privacy_guard/dbus_notification");
