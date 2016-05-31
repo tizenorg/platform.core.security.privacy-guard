@@ -49,7 +49,7 @@ PrivacyIdInfo::initialize(void)
 
 		for (k = privilege_list; k != NULL; k = k->next) {
 			char *privilege_id = (char*)k->data;
-			PG_LOGD("(privacy, privilege): (%s, %s)", privacy_id, privilege_id);
+			//PG_LOGD("(privacy, privilege): (%s, %s)", privacy_id, privilege_id);
 			m_privilegeToPrivacyMap.insert(std::map< std::string, std::string >::value_type(std::string(privilege_id), std::string(privacy_id)));
 		}
 	}

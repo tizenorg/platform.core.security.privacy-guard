@@ -33,6 +33,7 @@
 static cynara_monitor_configuration *p_conf;
 static cynara_monitor *p_cynara_monitor;
 static cynara_monitor_entry **monitor_entries;
+static bool exit_flag;
 
 CynaraService::CynaraService(void)
 	: m_signalToClose(-1)
@@ -88,12 +89,16 @@ CynaraService::start(void)
 	TryReturn( res >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "pthread_sigmask : %s", strerror_r(errno, buf, sizeof(buf)));
 
 	pthread_t cynaraThread;
+	PG_LOGD("starting new thread (getEntriesThread)");
 	res = pthread_create(&cynaraThread, NULL, &getEntriesThread, this);
 	TryReturn( res >= 0, PRIV_GUARD_ERROR_SYSTEM_ERROR, errno = res, "pthread_create : %s", strerror_r(errno, buf, sizeof(buf)));
+	PG_LOGD("new thread (getEntriesThread) started");
 
 	m_cynaraThread = cynaraThread;
 
-	PG_LOGI("CynaraService started");
+	exit_flag = false;
+
+	PG_LOGD("CynaraService started");
 
 	return PRIV_GUARD_ERROR_SUCCESS;
 }
@@ -101,35 +106,36 @@ CynaraService::start(void)
 void*
 CynaraService::getEntriesThread(void* pData)
 {
-	pthread_detach(pthread_self());
 	PG_LOGD("[cynara_service] Running get entries thread");
 
-//	pthread_t testThread;
-//	int result = pthread_create(&testThread, NULL, &flushThread, NULL);
-//	if(result){
-//		PG_LOGE("pthread_create FAIL");
-//		return (void*) PRIV_GUARD_ERROR_SYSTEM_ERROR;
-//	}
+	int res = -1;
+	pthread_detach(pthread_self());
 
-	// cynara_monitor_entries_get
-	// returned when the cynara buffer is full or cynara_monitor_entries_flush() is called from another thread
-	int res = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
-	if(res != CYNARA_API_SUCCESS){
-		PG_LOGE("cynara_monitor_entries_get FAIL");
-		return (void*) PRIV_GUARD_ERROR_SYSTEM_ERROR;
+	while (exit_flag == false) {
+		PG_LOGD("[cynara_service] waiting for monitor entries");
+
+		// cynara_monitor_entries_get
+		// returned when the cynara buffer is full or cynara_monitor_entries_flush() is called from another thread
+		res = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
+		if(res != CYNARA_API_SUCCESS){
+			PG_LOGE("cynara_monitor_entries_get() is failed. [%d]", res);
+			return (void*) PRIV_GUARD_ERROR_SYSTEM_ERROR;
+		}
+
+		res = CynaraService::updateDb(monitor_entries);
+		if(res != PRIV_GUARD_ERROR_SUCCESS){
+			PG_LOGE("updateDb FAIL");
+			return (void*) res;
+		}
+
+	//	pthread_join(testThread, NULL);
+
+		cynara_monitor_entries_free(monitor_entries);
 	}
-
-	res = CynaraService::updateDb(monitor_entries);
-	if(res != PRIV_GUARD_ERROR_SUCCESS){
-		PG_LOGE("updateDb FAIL");
-		return (void*) res;
-	}
-
-//	pthread_join(testThread, NULL);
 
 	cynara_monitor_entries_free(monitor_entries);
 
-	return (void*) 0;
+	return (void*) PRIV_GUARD_ERROR_SUCCESS;
 }
 
 /*void*
@@ -155,11 +161,11 @@ CynaraService::flushThread(void* pData)
 int
 CynaraService::updateDb(cynara_monitor_entry **monitor_entries)
 {
-	PG_LOGD("[cynara_service]");
+	PG_LOGD("[cynara_service] updateDb called");
 
 	cynara_monitor_entry **entryIter = monitor_entries;
 
-	PG_LOGD("entryIter = %x", entryIter);
+	//PG_LOGD("entryIter = %x", entryIter);
 
 	// DB update
 	const char *user = NULL, *client = NULL, *privilege = NULL;
@@ -171,16 +177,27 @@ CynaraService::updateDb(cynara_monitor_entry **monitor_entries)
 	while (*entryIter != nullptr) {
 		user = cynara_monitor_entry_get_user(*entryIter);
 		TryReturn(user != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "User Id in the entry is NULL");
+		PG_LOGD("@@ userid: [%s]", user);
 		client = cynara_monitor_entry_get_client(*entryIter);
 		TryReturn(user != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "Package Id in the entry is NULL");
+		PG_LOGD("@@ client: [%s]", client);
 		privilege = cynara_monitor_entry_get_privilege(*entryIter);
 		TryReturn(user != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "Privilege Id in the entry is NULL");
+		PG_LOGD("@@ privilege: [%s]", privilege);
 		timestamp = cynara_monitor_entry_get_timestamp(*entryIter);
 		TryReturn(user != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "timestamp in the entry is NULL");
 
 		userId = atoi(user);
-		packageId = client;
+		PG_LOGD("## userId: [%d]", userId);
+		std::string tempPackageId = client;
+		if (tempPackageId.substr(0, 11).compare("User::App::") == 0) {
+			packageId = tempPackageId.substr(11, tempPackageId.length() - 11);
+		} else {
+			packageId = client;
+		}
+		PG_LOGD("## packageId: [%s]", packageId.c_str());
 		privilegeId = privilege;
+		PG_LOGD("## privilegeId: [%s]", privilegeId.c_str());
 		date = timestamp->tv_sec;
 
 		// add access log
@@ -206,6 +223,20 @@ CynaraService::stop(void)
 
 	char buf[BUF_SIZE];
 	int ret;
+
+	// set thread exit condition
+	exit_flag = true;
+
+	// [CYNARA] Fluch Entries
+	ret = cynara_monitor_entries_flush(p_cynara_monitor);
+	if(ret != CYNARA_API_SUCCESS){
+		if (ret == CYNARA_API_OPERATION_NOT_ALLOWED) {
+			PG_LOGD("There is no logs in the cynara buffer.");
+		} else {
+			PG_LOGE("cynara_monitor_entries_flush FAIL [%d]", ret);
+			return PRIV_GUARD_ERROR_SYSTEM_ERROR;
+		}
+	}
 
 	if((ret = pthread_kill(m_cynaraThread, m_signalToClose)) < 0)
 	{

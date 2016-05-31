@@ -24,7 +24,7 @@
 #define PRIVACY_DB_PATH         tzplatform_mkpath(TZ_SYS_DB,".privacy_guard.db")
 
 //#define CYNARA_BUFFER_SIZE 1024
-#define CYNARA_BUFFER_SIZE 10
+#define CYNARA_BUFFER_SIZE 100
 
 typedef struct _privacy_data_s {
 	char *privacy_id;

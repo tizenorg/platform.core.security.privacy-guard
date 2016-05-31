@@ -39,18 +39,18 @@ SocketService::SocketService(void)
 	, m_signalToClose(-1)
 	, m_mainThread(-1)
 {
-	PG_LOGD("SocketService() called.");
+	//PG_LOGD("SocketService() called.");
 }
 
 SocketService::~SocketService(void)
 {
-	PG_LOGD("~SocketService() called.");
+	//PG_LOGD("~SocketService() called.");
 }
 
 int
 SocketService::initialize(void)
 {
-	PG_LOGD("SocketService initializing");
+	//PG_LOGD("SocketService initializing");
 
 	char buf[BUF_SIZE];
 	m_listenFd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -78,7 +78,7 @@ SocketService::initialize(void)
 
 	umask(original_umask);
 
-	PG_LOGI("SocketService initialized");
+	//PG_LOGI("SocketService initialized");
 
 	return PRIV_GUARD_ERROR_SUCCESS;
 }
@@ -86,7 +86,7 @@ SocketService::initialize(void)
 int
 SocketService::start(void)
 {
-	PG_LOGI("SocketService starting");
+	//PG_LOGI("SocketService starting");
 
 	sigset_t sigset;
 	sigemptyset(&sigset);
@@ -107,7 +107,7 @@ SocketService::start(void)
 
 	m_mainThread = mainThread;
 
-	PG_LOGI("SocketService started");
+	//PG_LOGI("SocketService started");
 
 	return PRIV_GUARD_ERROR_SUCCESS;
 }
@@ -115,11 +115,11 @@ SocketService::start(void)
 void*
 SocketService::serverThread(void* pData)
 {
-	PG_LOGD("serverThread() called.");
+	//PG_LOGD("serverThread() called.");
 	pthread_detach(pthread_self());
 	SocketService &t = *static_cast< SocketService* > (pData);
 
-	PG_LOGD("Running main thread");
+	//PG_LOGD("Running main thread");
 	int ret = t.mainloop();
 	if (ret < 0) {
 		return (void*) 1;
@@ -131,7 +131,7 @@ SocketService::serverThread(void* pData)
 int
 SocketService::mainloop(void)
 {
-	PG_LOGD("mainloop() called.");
+	//PG_LOGD("mainloop() called.");
 
 	char buf[BUF_SIZE];
 
@@ -226,11 +226,11 @@ SocketService::mainloop(void)
 void*
 SocketService::connectionThread(void* pData)
 {
-	PG_LOGD("connectionThread() called.");
+	//PG_LOGD("connectionThread() called.");
 	pthread_detach(pthread_self());
 	std::unique_ptr<ConnectionInfo> connectionInfo (static_cast<ConnectionInfo *>(pData));
 	SocketService &t = *static_cast<SocketService *>(connectionInfo->pData);
-	PG_LOGI("Starting connection thread");
+	//PG_LOGI("Starting connection thread");
 	int ret = t.connectionService(connectionInfo->connFd);
 	if (ret < 0)
 	{
@@ -239,14 +239,14 @@ SocketService::connectionThread(void* pData)
 		close(connectionInfo->connFd);
 		return (void*)1;
 	}
-	PG_LOGI("Client serviced");
+	//PG_LOGI("Client serviced");
 	return (void*)0;
 }
 
 int
 SocketService::connectionService(int fd)
 {
-	PG_LOGD("connectionService() called.");
+	//PG_LOGD("connectionService() called.");
 
 	SocketConnection connector = SocketConnection(fd);
 	std::string interfaceName, methodName;
@@ -280,14 +280,14 @@ SocketService::connectionService(int fd)
 //		}
 //	}
 
-	PG_LOGI("Calling service");
+	//PG_LOGI("Calling service");
 	m_callbackMap[interfaceName][methodName]->serviceCallback(&connector);
 
-	PG_LOGI("Removing client");
+	//PG_LOGI("Removing client");
 	removeClientSocket(fd);
 	close(fd);
 
-	PG_LOGI("Call served");
+	//PG_LOGI("Call served");
 
 	return PRIV_GUARD_ERROR_SUCCESS;
 }
@@ -295,7 +295,7 @@ SocketService::connectionService(int fd)
 int
 SocketService::stop(void)
 {
-	PG_LOGD("Stopping");
+	//PG_LOGD("Stopping");
 
 	char buf[BUF_SIZE];
 
@@ -315,7 +315,7 @@ SocketService::stop(void)
 	}
 	pthread_join(m_mainThread, NULL);
 
-	PG_LOGD("Stopped");
+	//PG_LOGD("Stopped");
 
 	return PRIV_GUARD_ERROR_SUCCESS;
 }
@@ -323,14 +323,14 @@ SocketService::stop(void)
 int
 SocketService::shutdown(void)
 {
-	PG_LOGD("called");
+	//PG_LOGD("called");
 	return PRIV_GUARD_ERROR_SUCCESS;
 }
 
 int
 SocketService::registerServiceCallback(const std::string &interfaceName,  const std::string &methodName, socketServiceCallback callbackMethod)
 {
-	PG_LOGD("called");
+	//PG_LOGD("called");
 
 	if(NULL == callbackMethod)
 	{
@@ -352,7 +352,7 @@ SocketService::registerServiceCallback(const std::string &interfaceName,  const 
 void
 SocketService::addClientSocket(int clientSocket)
 {
-	PG_LOGD("called");
+	//PG_LOGD("called");
 
 	std::lock_guard<std::mutex> guard(m_clientSocketListMutex);
 	m_clientSocketList.push_back(clientSocket);
@@ -361,7 +361,7 @@ SocketService::addClientSocket(int clientSocket)
 void
 SocketService::removeClientSocket(int clientSocket)
 {
-	PG_LOGD("called");
+	//PG_LOGD("called");
 
 	std::lock_guard<std::mutex> guard(m_clientSocketListMutex);
 	m_clientSocketList.remove(clientSocket);
@@ -370,7 +370,7 @@ SocketService::removeClientSocket(int clientSocket)
 bool
 SocketService::popClientSocket(int * pClientSocket)
 {
-	PG_LOGD("called");
+	//PG_LOGD("called");
 
 	std::lock_guard<std::mutex> guard(m_clientSocketListMutex);
 	if(m_clientSocketList.empty())
@@ -384,7 +384,7 @@ SocketService::popClientSocket(int * pClientSocket)
 void
 SocketService::closeConnections(void)
 {
-	PG_LOGD("called");
+	//PG_LOGD("called");
 
 	int clientSocket;
 	char buf[BUF_SIZE];
@@ -397,5 +397,5 @@ SocketService::closeConnections(void)
 		}
 	}
 
-	PG_LOGD("Connections closed");
+	//PG_LOGD("Connections closed");
 }

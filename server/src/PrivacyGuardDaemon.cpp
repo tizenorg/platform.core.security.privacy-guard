@@ -80,14 +80,14 @@ PrivacyGuardDaemon::start(void)
 	}
 
 	// [CYNARA]
-/*	PG_LOGD("calling pCynaraService->start()");
+	PG_LOGD("calling pCynaraService->start()");
 	if (pCynaraService == NULL)
 		return PRIV_GUARD_ERROR_NOT_INITIALIZED;
 	res = pCynaraService->start();
 	if(res != PRIV_GUARD_ERROR_SUCCESS){
 		PG_LOGE("FAIL");
 	}
-*/
+
 	return res;
 }
 
