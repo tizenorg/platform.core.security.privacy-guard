@@ -46,7 +46,7 @@ public:
 
 	int PgAddPrivacyAccessLog(const int userId, std::list < std::pair < std::string, std::string > > logInfoList);
 
-	int PgAddPrivacyAccessLogForCynara(const int userId, const std::string packageId, const std::string privilege, const time_t timestamp);
+	int PgAddPrivacyAccessLogForCynara(const int userId, const std::string packageId, const std::string privacyId, const time_t timestamp);
 
 	int PgAddPrivacyAccessLogTest(const int userId, const std::string packageId, const std::string privacyId);
 

@@ -27,6 +27,7 @@
 #include "Utils.h"
 #include "CynaraService.h"
 #include "PrivacyGuardDb.h"
+#include "PrivacyIdInfo.h"
 
 #define BUF_SIZE 256
 
@@ -171,42 +172,55 @@ CynaraService::updateDb(cynara_monitor_entry **monitor_entries)
 	const char *user = NULL, *client = NULL, *privilege = NULL;
 	const timespec *timestamp = NULL;
 	int userId;
-	std::string packageId, privilegeId;
+	std::string packageId, privacyId;
 	time_t date;
+	int res = -1;
 
 	while (*entryIter != nullptr) {
-		user = cynara_monitor_entry_get_user(*entryIter);
-		TryReturn(user != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "User Id in the entry is NULL");
-		PG_LOGD("@@ userid: [%s]", user);
-		client = cynara_monitor_entry_get_client(*entryIter);
-		TryReturn(user != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "Package Id in the entry is NULL");
-		PG_LOGD("@@ client: [%s]", client);
 		privilege = cynara_monitor_entry_get_privilege(*entryIter);
-		TryReturn(user != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "Privilege Id in the entry is NULL");
+		TryReturn(privilege != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "Privilege Id in the entry is NULL");
 		PG_LOGD("@@ privilege: [%s]", privilege);
-		timestamp = cynara_monitor_entry_get_timestamp(*entryIter);
-		TryReturn(user != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "timestamp in the entry is NULL");
 
-		userId = atoi(user);
-		PG_LOGD("## userId: [%d]", userId);
-		std::string tempPackageId = client;
-		if (tempPackageId.substr(0, 11).compare("User::App::") == 0) {
-			packageId = tempPackageId.substr(11, tempPackageId.length() - 11);
-		} else {
-			packageId = client;
-		}
-		PG_LOGD("## packageId: [%s]", packageId.c_str());
-		privilegeId = privilege;
-		PG_LOGD("## privilegeId: [%s]", privilegeId.c_str());
-		date = timestamp->tv_sec;
+		PG_LOGD("getting privacy id from privilege [%s]", privilege);
 
-		// add access log
-		int ret = PrivacyGuardDb::getInstance()->PgAddPrivacyAccessLogForCynara(userId, packageId, privilegeId, date);
-		if(ret != PRIV_GUARD_ERROR_SUCCESS){
-			PG_LOGE("PgAddPrivacyAccessLogForCynara FAIL");
+		// change from privilege to privacy
+		res = PrivacyIdInfo::getPrivacyIdFromPrivilege(privilege, privacyId);
+		if (res == PRIV_GUARD_ERROR_NO_DATA) {
+			PG_LOGD("Input privilege[%s] is not related to any privacy. So skip it.", privilege);
 		}
-		else{
-			PG_LOGD("PgAddPrivacyAccessLogForCynara SUCCESS");
+		else {
+			PG_LOGD("@@ privacyId: [%s]", privacyId.c_str());
+
+			user = cynara_monitor_entry_get_user(*entryIter);
+			TryReturn(user != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "User Id in the entry is NULL");
+			PG_LOGD("@@ userid: [%s]", user);
+
+			client = cynara_monitor_entry_get_client(*entryIter);
+			TryReturn(client != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "Package Id in the entry is NULL");
+			PG_LOGD("@@ client: [%s]", client);
+
+			timestamp = cynara_monitor_entry_get_timestamp(*entryIter);
+			TryReturn(timestamp != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "timestamp in the entry is NULL");
+
+			userId = atoi(user);
+			PG_LOGD("## userId: [%d]", userId);
+			std::string tempPackageId = client;
+			if (tempPackageId.substr(0, USER_APP_PREFIX_LEN).compare(USER_APP_PREFIX) == 0) {
+				packageId = tempPackageId.substr(USER_APP_PREFIX_LEN, tempPackageId.length() - USER_APP_PREFIX_LEN);
+			} else {
+				packageId = client;
+			}
+			PG_LOGD("## packageId: [%s]", packageId.c_str());
+			date = timestamp->tv_sec;
+
+			// add access log
+			int ret = PrivacyGuardDb::getInstance()->PgAddPrivacyAccessLogForCynara(userId, packageId, privacyId, date);
+			if(ret != PRIV_GUARD_ERROR_SUCCESS){
+				PG_LOGE("PgAddPrivacyAccessLogForCynara FAIL");
+			}
+			else{
+				PG_LOGD("PgAddPrivacyAccessLogForCynara SUCCESS");
+			}
 		}
 
 		++entryIter;

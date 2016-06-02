@@ -25,6 +25,8 @@
 
 //#define CYNARA_BUFFER_SIZE 1024
 #define CYNARA_BUFFER_SIZE 100
+#define USER_APP_PREFIX "User::App::"
+#define USER_APP_PREFIX_LEN 11
 
 typedef struct _privacy_data_s {
 	char *privacy_id;

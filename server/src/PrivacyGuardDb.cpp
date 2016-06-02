@@ -144,7 +144,7 @@ PrivacyGuardDb::PgAddPrivacyAccessLog(const int userId, std::list < std::pair < 
 }
 
 int
-PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::string packageId, const std::string privilegeId, const time_t date)
+PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::string packageId, const std::string privacyId, const time_t date)
 {
 	PG_LOGD("start.");
 
@@ -154,17 +154,6 @@ PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::stri
 	}
 
 	int res = -1;
-	std::string privacyId;
-
-	PG_LOGD("getting privacy id from privilege [%s]", privilegeId.c_str());
-
-	// change from privilege to privacy
-	res = PrivacyIdInfo::getPrivacyIdFromPrivilege(privilegeId, privacyId);
-	if (res == PRIV_GUARD_ERROR_NO_DATA) {
-		PG_LOGD("Input privilege[%s] is not related to any privacy. So skip it.", privilegeId.c_str());
-		return PRIV_GUARD_ERROR_SUCCESS;
-	}
-	TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "getPrivacyIdFromPrivilege is failed: [%d]", res);
 
 	PG_LOGD("getting monitor policy");
 
