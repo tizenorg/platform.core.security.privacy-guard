@@ -378,8 +378,10 @@ int privacy_guard_client_foreach_package_info_by_privacy_id(const int user_id, c
 		return retval;
 	}
 
-	if (packageInfoList.size() == 0)
+	if (packageInfoList.size() == 0) {
+		PG_LOGE("The size of package info list is 0.");
 		return PRIV_GUARD_ERROR_NO_DATA;
+	}
 
 	for (std::list < package_data_s >::iterator iter = packageInfoList.begin(); iter != packageInfoList.end(); ++iter) {
 		bool ret = callback(iter->package_id, iter->count, iter->monitor_policy, user_data);

@@ -146,16 +146,12 @@ PrivacyGuardDb::PgAddPrivacyAccessLog(const int userId, std::list < std::pair < 
 int
 PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::string packageId, const std::string privacyId, const time_t date)
 {
-	PG_LOGD("start.");
-
 	if(userId < 0 || date <= 0) {
 		PG_LOGE("Invalid parameter: userId: [%d], date: [%d]", userId, date);
 		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
 	}
 
 	int res = -1;
-
-	PG_LOGD("getting monitor policy");
 
 	// check monitor policy using userId, packageId, privacyId
 	int monitorPolicy;
@@ -165,8 +161,6 @@ PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::stri
 		PG_LOGD("Monitor Policy is 0. So skip it. UserId:[%d], PrivacyId:[%s], PackageId:[%s], Policy:[%d]", userId, privacyId.c_str(), packageId.c_str(), monitorPolicy);
 		return PRIV_GUARD_ERROR_SUCCESS;
 	}
-
-	PG_LOGD("## UserID[%d], PackageId[%s], PrivacyId[%s], Policy[%d]", userId, packageId.c_str(), privacyId.c_str(), monitorPolicy);
 
 	static const std::string QUERY_INSERT = std::string("INSERT INTO StatisticsMonitorInfo(USER_ID, PKG_ID, PRIVACY_ID, USE_DATE) VALUES(?, ?, ?, ?)");
 
@@ -501,32 +495,16 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPackage(const int userId, const int 
 {
 	int res = -1;
 
-	// [CYNARA] Fluch Entries
+	// [CYNARA] Flush Entries
 	res = cynara_monitor_entries_flush(p_cynara_monitor);
 	if(res != CYNARA_API_SUCCESS){
 		if (res == CYNARA_API_OPERATION_NOT_ALLOWED) {
 			PG_LOGD("There is no logs in the cynara buffer.");
 		} else {
 			PG_LOGE("cynara_monitor_entries_flush FAIL [%d]", res);
-			return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 		}
 	}
 
-
-/*	// [CYNARA] Get Entries
-	ret = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
-	if(ret != CYNARA_API_SUCCESS){
-		PG_LOGE("cynara_monitor_entries_get FAIL");
-		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
-	}
-
-	// [CYNARA] Update DB
-	ret = CynaraService::updateDb(monitor_entries);
-	if(ret != PRIV_GUARD_ERROR_SUCCESS){
-		PG_LOGE("updateDb FAIL");
-		return ret;
-	}
-*/
 	static const std::string PKGID_SELECT = std::string("SELECT DISTINCT PKG_ID FROM StatisticsMonitorInfo WHERE USER_ID=? AND USE_DATE>=? AND USE_DATE<=?");
 	static const std::string PKGINFO_SELECT = std::string("SELECT COUNT(*) FROM StatisticsMonitorInfo WHERE USER_ID=? AND PKG_ID=? AND USE_DATE>=? AND USE_DATE<=?");
 	sqlite3_stmt* infoStmt;
@@ -598,32 +576,16 @@ PrivacyGuardDb::PgForeachTotalPrivacyCountOfPrivacy(const int userId, const int 
 {
 	int res = -1;
 
-	// [CYNARA] Fluch Entries
+	// [CYNARA] Flush Entries
 	res = cynara_monitor_entries_flush(p_cynara_monitor);
 	if(res != CYNARA_API_SUCCESS){
 		if (res == CYNARA_API_OPERATION_NOT_ALLOWED) {
 			PG_LOGD("There is no logs in the cynara buffer.");
 		} else {
 			PG_LOGE("cynara_monitor_entries_flush FAIL [%d]", res);
-			return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 		}
 	}
 
-
-/*	// [CYNARA] Get Entries
-	ret = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
-	if(ret != CYNARA_API_SUCCESS){
-		PG_LOGE("cynara_monitor_entries_get FAIL");
-		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
-	}
-
-	// [CYNARA] Update DB
-	ret = CynaraService::updateDb(monitor_entries);
-	if(ret != PRIV_GUARD_ERROR_SUCCESS){
-		PG_LOGE("updateDb FAIL");
-		return ret;
-	}
-*/
 	static const std::string PRIVACY_SELECT = std::string("SELECT COUNT(*) FROM StatisticsMonitorInfo WHERE USER_ID=? AND PRIVACY_ID=? AND USE_DATE>=? AND USE_DATE<=?");
 
 	m_dbMutex.lock();
@@ -682,32 +644,15 @@ PrivacyGuardDb::PgForeachPrivacyCountByPrivacyId(const int userId, const int sta
 {
 	int res = -1;
 
-	// [CYNARA] Fluch Entries
+	// [CYNARA] Flush Entries
 	res = cynara_monitor_entries_flush(p_cynara_monitor);
 	if(res != CYNARA_API_SUCCESS){
 		if (res == CYNARA_API_OPERATION_NOT_ALLOWED) {
 			PG_LOGD("There is no logs in the cynara buffer.");
 		} else {
 			PG_LOGE("cynara_monitor_entries_flush FAIL [%d]", res);
-			return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 		}
 	}
-
-
-/*	// [CYNARA] Get Entries
-	ret = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
-	if(ret != CYNARA_API_SUCCESS){
-		PG_LOGE("cynara_monitor_entries_get FAIL");
-		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
-	}
-
-	// [CYNARA] Update DB
-	ret = CynaraService::updateDb(monitor_entries);
-	if(ret != PRIV_GUARD_ERROR_SUCCESS){
-		PG_LOGE("updateDb FAIL");
-		return ret;
-	}
-*/
 
 	static const std::string PKGID_SELECT = std::string("SELECT DISTINCT PKG_ID FROM StatisticsMonitorInfo WHERE USER_ID=? AND PRIVACY_ID=? AND USE_DATE>=? AND USE_DATE<=?");
 	static const std::string PKGINFO_SELECT = std::string("SELECT COUNT(*) FROM StatisticsMonitorInfo WHERE USER_ID=? AND PKG_ID=? AND PRIVACY_ID=? AND USE_DATE>=? AND USE_DATE<=?");
@@ -788,32 +733,15 @@ PrivacyGuardDb::PgForeachPrivacyCountByPackageId(const int userId, const int sta
 {
 	int res = -1;
 
-	// [CYNARA] Fluch Entries
+	// [CYNARA] Flush Entries
 	res = cynara_monitor_entries_flush(p_cynara_monitor);
 	if(res != CYNARA_API_SUCCESS){
 		if (res == CYNARA_API_OPERATION_NOT_ALLOWED) {
 			PG_LOGD("There is no logs in the cynara buffer.");
 		} else {
 			PG_LOGE("cynara_monitor_entries_flush FAIL [%d]", res);
-			return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 		}
 	}
-
-
-/*	// [CYNARA] Get Entries
-	ret = cynara_monitor_entries_get(p_cynara_monitor, &monitor_entries);
-	if(ret != CYNARA_API_SUCCESS){
-		PG_LOGE("cynara_monitor_entries_get FAIL");
-		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
-	}
-
-	// [CYNARA] Update DB
-	ret = CynaraService::updateDb(monitor_entries);
-	if(ret != PRIV_GUARD_ERROR_SUCCESS){
-		PG_LOGE("updateDb FAIL");
-		return ret;
-	}
-*/
 
 	static const std::string PRIVACY_SELECT = std::string("SELECT COUNT(*) FROM StatisticsMonitorInfo WHERE USER_ID=? AND PKG_ID=? AND PRIVACY_ID=? AND USE_DATE>=? AND USE_DATE<=?");
 
@@ -1079,14 +1007,13 @@ PrivacyGuardDb::PgForeachPackageInfoByPrivacyId(const int userId, const std::str
 	date = localtime(&start_date);
 	PG_LOGD("start time [%d]: %4d/%2d/%2d %2d:%2d", start_date, date->tm_year + 1900, date->tm_mon + 1, date->tm_mday, date->tm_hour, date->tm_min);
 
-	// [CYNARA] Fluch Entries
+	// [CYNARA] Flush Entries
 	res = cynara_monitor_entries_flush(p_cynara_monitor);
 	if(res != CYNARA_API_SUCCESS){
 		if (res == CYNARA_API_OPERATION_NOT_ALLOWED) {
 			PG_LOGD("There is no logs in the cynara buffer.");
 		} else {
 			PG_LOGE("cynara_monitor_entries_flush FAIL [%d]", res);
-			return PRIV_GUARD_ERROR_SYSTEM_ERROR;
 		}
 	}
 

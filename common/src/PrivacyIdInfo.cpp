@@ -71,7 +71,7 @@ PrivacyIdInfo::getPrivacyIdFromPrivilege(const std::string privilege, std::strin
 
 	std::map< std::string, std::string >::iterator iter = m_privilegeToPrivacyMap.find(privilege);
 	if (iter == m_privilegeToPrivacyMap.end()) {
-		PG_LOGE("There is no matching privacy to privilege [%s]", privilege.c_str());
+		//PG_LOGD("There is no matching privacy to privilege [%s]", privilege.c_str());
 		return PRIV_GUARD_ERROR_NO_DATA;
 	}
 
