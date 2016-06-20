@@ -33,6 +33,7 @@
 #include "PrivacyIdInfo.h"
 
 #define BUF_SIZE 256
+#define ONE_SEC (SLEEP_TIME * 20)
 
 static cynara_monitor_configuration *p_conf;
 static cynara_monitor *p_cynara_monitor;
@@ -57,7 +58,7 @@ CynaraService::~CynaraService(void)
 int
 CynaraService::initialize(void)
 {
-	PG_LOGD("[cynara_service] CynaraService initializing");
+	PG_LOGD("initializing CynaraService..");
 
 	int res = cynara_monitor_configuration_create(&p_conf);
 	if(res != CYNARA_API_SUCCESS){
@@ -87,7 +88,7 @@ CynaraService::initialize(void)
 int
 CynaraService::start(void)
 {
-	PG_LOGI("[cynara_service] CynaraService starting");
+	PG_LOGI("starting CynaraService..");
 
 	int res = 0;
 	char buf[256];
@@ -120,7 +121,7 @@ CynaraService::start(void)
 void*
 CynaraService::getEntriesThread(void* pData)
 {
-	PG_LOGD("[cynara_service] Running get entries thread");
+	PG_LOGD("Running get entries thread");
 
 	int res = -1;
 
@@ -149,7 +150,7 @@ CynaraService::getEntriesThread(void* pData)
 			PG_LOGD("ok, i'm wakeup..");
 			pthread_mutex_unlock(&g_mutex);
 #else
-			usleep(SLEEP_TIME * 20);	// 1 SEC
+			usleep(ONE_SEC);	// 1 SEC
 #endif
 		} else {
 			if (monitor_entries) {

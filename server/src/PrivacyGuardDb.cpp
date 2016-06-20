@@ -17,7 +17,6 @@
 #include <sstream>
 #include <fstream>
 #include <sqlite3.h>
-#include <pkgmgr-info.h>
 #include <time.h>
 #include <privilege_info.h>
 #include <cynara-monitor.h>

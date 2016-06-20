@@ -36,13 +36,10 @@ void destroy_char_list(char** ppList, int size)
 
 	if (ppList) {
 		for (i = 0; i < size; ++i) {
-			if (ppList[i]) {
+			if (ppList[i])
 				free(ppList[i]);
-			}
 		}
-		if (ppList) {
-			free(ppList);
-		}
+		free(ppList);
 	}
 }
 
@@ -65,7 +62,7 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 	LOGD("PKGMGR_PARSER_PLUGIN_INSTALL() called with [%s].", packageId);
 
 	uid_t user_id = getuid();
-	LOGD("Current userid is %d.", user_id);
+	LOGD("user_id is %d.", user_id);
 
 	int ret = 0;
 
@@ -75,6 +72,7 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 		LOGE("Failed to get the element. xmlFirstElementChild() returned NULL.");
 		return -EINVAL;
 	}
+
 	curPtr = curPtr->xmlChildrenNode;
 	if (curPtr == NULL) {
 		LOGE("No privileges");
@@ -95,8 +93,8 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 		curPtr = curPtr->next;
 	}
 
-	char** ppPrivilegeList = (char**) calloc(privilegeList.size() + 1, sizeof(char*));
-	char** temp = ppPrivilegeList;
+	char **ppPrivilegeList = (char**) calloc(privilegeList.size() + 1, sizeof(char*));
+	char **temp = ppPrivilegeList;
 	std::list <std::string>::iterator iter = privilegeList.begin();
 	for (size_t i = 0; i < privilegeList.size(); ++i) {
 		ppPrivilegeList[i] = (char*)calloc(strlen(iter->c_str()) + 1, sizeof(char));

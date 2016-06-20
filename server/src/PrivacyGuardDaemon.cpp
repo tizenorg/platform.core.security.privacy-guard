@@ -97,8 +97,8 @@ PrivacyGuardDaemon::stop(void)
 	PG_LOGD("calling pSocketService->stop()");
 	pSocketService->stop();
 
-//	PG_LOGD("calling pCynaraService->stop()");
-//	pCynaraService->stop();
+	PG_LOGD("calling pCynaraService->stop()");
+	pCynaraService->stop();
 
 	return 0;
 }
@@ -108,8 +108,9 @@ PrivacyGuardDaemon::shutdown(void)
 {
 	PG_LOGD("calling pSocketService->shutdown()");
 	pSocketService->shutdown();
-//	PG_LOGD("calling pCynaraService->shutdown()");
-//	pCynaraService->shutdown();
+
+	PG_LOGD("calling pCynaraService->shutdown()");
+	pCynaraService->shutdown();
 
 	return 0;
 }
