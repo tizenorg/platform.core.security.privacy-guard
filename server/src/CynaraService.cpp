@@ -152,9 +152,11 @@ CynaraService::getEntriesThread(void* pData)
 			usleep(SLEEP_TIME * 20);	// 1 SEC
 #endif
 		} else {
-			res = CynaraService::updateDb(monitor_entries);
-			if(res != PRIV_GUARD_ERROR_SUCCESS){
-				PG_LOGE("CynaraService::updateDb() is failed. [%d]", res);
+			if (monitor_entries) {
+				res = CynaraService::updateDb(monitor_entries);
+				if(res != PRIV_GUARD_ERROR_SUCCESS) {
+					PG_LOGE("CynaraService::updateDb() is failed. [%d]", res);
+				}
 			}
 		}
 
@@ -204,10 +206,13 @@ CynaraService::updateDb(cynara_monitor_entry **monitor_entries)
 
 			// check package ID
 			std::string tempPackageId = client;
+			PG_LOGD("Package ID from cynara: [%s]", client);
 			if (tempPackageId.substr(0, USER_APP_PREFIX_LEN).compare(USER_APP_PREFIX) == 0) {
 				packageId = tempPackageId.substr(USER_APP_PREFIX_LEN, tempPackageId.length() - USER_APP_PREFIX_LEN);
+				PG_LOGD("Fixed Package ID: [%s]", packageId.c_str());
 			} else {
 				packageId = client;
+				PG_LOGD("Fixed Package ID: [%s]", client);
 			}
 
 			// datetime

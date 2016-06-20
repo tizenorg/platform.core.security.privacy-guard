@@ -36,10 +36,13 @@ void destroy_char_list(char** ppList, int size)
 
 	if (ppList) {
 		for (i = 0; i < size; ++i) {
-			if (ppList[i])
+			if (ppList[i]) {
 				free(ppList[i]);
+			}
 		}
-		free(ppList);
+		if (ppList) {
+			free(ppList);
+		}
 	}
 }
 
@@ -68,7 +71,10 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 
 	// Node: <privileges>
 	xmlNodePtr curPtr = xmlFirstElementChild(xmlDocGetRootElement(docPtr));
-
+	if (curPtr == NULL) {
+		LOGE("Failed to get the element. xmlFirstElementChild() returned NULL.");
+		return -EINVAL;
+	}
 	curPtr = curPtr->xmlChildrenNode;
 	if (curPtr == NULL) {
 		LOGE("No privileges");
@@ -120,6 +126,7 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 		LOGE("Failed to add monitor policy: [%d]", ret);
 		return -EIO;
 	}
+
 	if (temp)
 		destroy_char_list(temp, privilegeList.size() + 1);
 
@@ -148,8 +155,6 @@ int PKGMGR_PARSER_PLUGIN_UNINSTALL(xmlDocPtr docPtr, const char* packageId)
 		LOGE("Package ID is NULL");
 		return -EINVAL;
 	}
-
-	LOGD("PKGMGR_PARSER_PLUGIN_UNINSTALL() called with [%s].", packageId);
 
 	PrivacyGuardClient *pInst = PrivacyGuardClient::getInstance();
 

@@ -993,19 +993,19 @@ PrivacyGuardDb::PgForeachPackageInfoByPrivacyId(const int userId, const std::str
 	static const std::string PKGINFO_SELECT = std::string("SELECT COUNT(*) FROM StatisticsMonitorInfo WHERE USER_ID=? AND PKG_ID=? AND PRIVACY_ID=? AND USE_DATE>=? AND USE_DATE<=?");
 	sqlite3_stmt* infoStmt;
 	time_t start_date, today_midnight, end_date;
-	struct tm *date = NULL;
+	struct tm date;
 
 	// get start~end date (for 7 days)
 	end_date = time(NULL);
-	date = localtime(&end_date);
-	PG_LOGD("current (end) time [%d]: %4d/%2d/%2d %2d:%2d", end_date, date->tm_year + 1900, date->tm_mon + 1, date->tm_mday, date->tm_hour, date->tm_min);
-	date->tm_hour = 0;
-	date->tm_min = 0;
-	date->tm_sec = 0;
-	today_midnight = mktime(date);
+	localtime_r(&end_date, &date);
+	PG_LOGD("current (end) time [%d]: %4d/%2d/%2d %2d:%2d", end_date, date.tm_year + 1900, date.tm_mon + 1, date.tm_mday, date.tm_hour, date.tm_min);
+	date.tm_hour = 0;
+	date.tm_min = 0;
+	date.tm_sec = 0;
+	today_midnight = mktime(&date);
 	start_date = today_midnight - (UNIX_TIME_ONE_DAY * (PRIVACY_GUARD_DAYS - 1));
-	date = localtime(&start_date);
-	PG_LOGD("start time [%d]: %4d/%2d/%2d %2d:%2d", start_date, date->tm_year + 1900, date->tm_mon + 1, date->tm_mday, date->tm_hour, date->tm_min);
+	localtime_r(&start_date, &date);
+	PG_LOGD("start time [%d]: %4d/%2d/%2d %2d:%2d", start_date, date.tm_year + 1900, date.tm_mon + 1, date.tm_mday, date.tm_hour, date.tm_min);
 
 	// [CYNARA] Flush Entries
 	res = cynara_monitor_entries_flush(p_cynara_monitor);
@@ -1056,23 +1056,23 @@ PrivacyGuardDb::PgForeachPackageInfoByPrivacyId(const int userId, const std::str
 
 		// prepare
 		res = sqlite3_prepare_v2(m_sqlHandler, PKGINFO_SELECT.c_str(), -1, &infoStmt, NULL);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, SAFE_FREE(p_data.package_id); m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
 
 		// bind
 		res = sqlite3_bind_int(infoStmt, 1, userId);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, SAFE_FREE(p_data.package_id); m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		res = sqlite3_bind_text(infoStmt, 2, p_data.package_id, -1, SQLITE_TRANSIENT);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, SAFE_FREE(p_data.package_id); m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 		res = sqlite3_bind_text(infoStmt, 3, privacyId.c_str(), -1, SQLITE_TRANSIENT);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, SAFE_FREE(p_data.package_id); m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
 
 		res = sqlite3_bind_int(infoStmt, 4, start_date);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, SAFE_FREE(p_data.package_id); m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		res = sqlite3_bind_int(infoStmt, 5, end_date);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+		TryCatchResLogReturn(res == SQLITE_OK, SAFE_FREE(p_data.package_id); m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
 
 		if ((res = sqlite3_step(infoStmt)) == SQLITE_ROW) {
 			int count = sqlite3_column_int(infoStmt, 0);
@@ -1082,6 +1082,7 @@ PrivacyGuardDb::PgForeachPackageInfoByPrivacyId(const int userId, const std::str
 			p_data.count = count;
 			packageInfoList.push_back(p_data);
 		}
+
 		sqlite3_reset(infoStmt);
 	}
 	m_dbMutex.unlock();
