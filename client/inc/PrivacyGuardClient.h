@@ -23,12 +23,18 @@
 #include <vector>
 #include <memory>
 #include "PrivacyGuardTypes.h"
+#include <sqlite3.h>
 
 class SocketClient;
 
 class EXTERN_API PrivacyGuardClient
 {
 private:
+	std::mutex m_dbMutex;
+	sqlite3* m_sqlHandler;
+	sqlite3_stmt* m_stmt;
+	bool m_bDBOpen;
+
 	static PrivacyGuardClient* m_pInstance;
 	static const std::string INTERFACE_NAME;
 
@@ -43,6 +49,10 @@ private:
 
 public:
 	static PrivacyGuardClient* getInstance(void);
+
+	virtual void openSqliteDB(void);
+
+	int PgAddMonitorPolicyOffline(const int userId, const std::string packageId, const std::list < std::string > privacyList, bool monitorPolicy);
 
 	int PgAddPrivacyAccessLog(const int userId, const std::string packageId, const std::string privacyId);
 

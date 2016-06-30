@@ -45,6 +45,69 @@ PrivacyGuardClient::getInstance(void)
 	return m_pInstance;
 }
 
+void
+PrivacyGuardClient::openSqliteDB(void)
+{
+	int res = -1;
+	res = sqlite3_open_v2(PRIVACY_DB_PATH, &m_sqlHandler, SQLITE_OPEN_READWRITE, NULL);
+	if(res == SQLITE_OK) {
+		PG_LOGI("monitor db is opened successfully");
+		m_bDBOpen = true;
+	}
+	else {
+		PG_LOGE("fail : monitor db open(%d)", res);
+	}
+}
+
+int
+PrivacyGuardClient::PgAddMonitorPolicyOffline(const int userId, const std::string packageId, const std::list < std::string > privacyList, bool monitorPolicy)
+{
+	int res = -1;
+
+	static const std::string QUERY_INSERT = std::string("INSERT INTO MonitorPolicy(USER_ID, PKG_ID, PRIVACY_ID, MONITOR_POLICY) VALUES(?, ?, ?, ?)");
+
+	m_dbMutex.lock();
+	m_sqlHandler = NULL;
+	m_stmt = NULL;
+	m_bDBOpen = false;
+	
+	// open db
+	if(m_bDBOpen == false) {
+		openSqliteDB();
+	}
+	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
+
+	// prepare
+	res = sqlite3_prepare_v2(m_sqlHandler, QUERY_INSERT.c_str(), -1, &m_stmt, NULL);
+	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
+
+	for (std::list <std::string>::const_iterator iter = privacyList.begin(); iter != privacyList.end(); ++iter) {
+		PG_LOGD("User ID: [%d], Package ID: [%s], PrivacyID: [%s], Monitor Policy: [%d]", userId, packageId.c_str(), iter->c_str(), monitorPolicy);
+
+		// bind
+		res = sqlite3_bind_int(m_stmt, 1, userId);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+
+		res = sqlite3_bind_text(m_stmt, 2, packageId.c_str(), -1, SQLITE_TRANSIENT);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+
+		res = sqlite3_bind_text(m_stmt, 3, iter->c_str(), -1, SQLITE_TRANSIENT);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
+
+		res = sqlite3_bind_int(m_stmt, 4, monitorPolicy);
+		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
+
+		res = sqlite3_step(m_stmt);
+		TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
+
+		sqlite3_reset(m_stmt);
+	}
+	m_dbMutex.unlock();
+
+	return PRIV_GUARD_ERROR_SUCCESS;
+}
+
+
 int
 PrivacyGuardClient::PgAddPrivacyAccessLog(const int userId, const std::string packageId, const std::string privacyId)
 {
@@ -123,9 +186,19 @@ PrivacyGuardClient::PgAddMonitorPolicy(const int userId, const std::string pkgId
 		return PRIV_GUARD_ERROR_SUCCESS;
 	}
 
+	bool isServerOperation = false;
+
 	res = m_pSocketClient->connect();
+	if(res != PRIV_GUARD_ERROR_SUCCESS) {
+		isServerOperation = false;
+		PG_LOGD("Failed to connect. So change to the offline mode");
+	}
+	else {
+		isServerOperation = true;
+	}
 	TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "connect : %d", res);
 
+	if (isServerOperation == true) {
 	int result = PRIV_GUARD_ERROR_SUCCESS;
 
 	res = m_pSocketClient->call("PgAddMonitorPolicy", userId, pkgId, privacyList, monitorPolicy, &result);
@@ -135,6 +208,10 @@ PrivacyGuardClient::PgAddMonitorPolicy(const int userId, const std::string pkgId
 	TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "disconnect : %d", res);
 
 	return result;
+}
+	else 	{
+		return PgAddMonitorPolicyOffline(userId, pkgId, privacyList, monitorPolicy);
+	}
 }
 
 int
