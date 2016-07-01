@@ -13,6 +13,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
+TZ_SYS_DB=/opt/dbspace
+TZ_SYS_BIN=/usr/bin
 source /etc/tizen-platform.conf
 for name in privacy_guard
 do
