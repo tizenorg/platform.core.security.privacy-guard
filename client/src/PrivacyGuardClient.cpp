@@ -70,7 +70,7 @@ PrivacyGuardClient::PgAddMonitorPolicyOffline(const int userId, const std::strin
 	m_sqlHandler = NULL;
 	m_stmt = NULL;
 	m_bDBOpen = false;
-	
+
 	// open db
 	if(m_bDBOpen == false) {
 		openSqliteDB();

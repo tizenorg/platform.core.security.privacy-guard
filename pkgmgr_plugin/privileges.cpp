@@ -56,16 +56,13 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 {
 	if (packageId == NULL) {
 		LOGE("Package ID is NULL");
-		printf("Package ID is NULL");
 		return -EINVAL;
 	}
 
 	LOGD("PKGMGR_PARSER_PLUGIN_INSTALL() called with [%s].", packageId);
-	printf("PKGMGR_PARSER_PLUGIN_INSTALL() called with [%s].", packageId);
 
 	uid_t user_id = getuid();
 	LOGD("user_id is %d.", user_id);
-	printf("user_id is %d.", user_id);
 
 	int ret = 0;
 
@@ -73,18 +70,12 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 	xmlNodePtr curPtr = xmlFirstElementChild(xmlDocGetRootElement(docPtr));
 	if (curPtr == NULL) {
 		LOGE("Failed to get the element. xmlFirstElementChild() returned NULL.");
-		printf("Failed to get the element. xmlFirstElementChild() returned NULL.");
 		return -EINVAL;
-	}
-	else {
-		LOGD("Succeeded to get the element. xmlFirstElementChild().");
-		printf("Succeeded to get the element. xmlFirstElementChild().");
 	}
 
 	curPtr = curPtr->xmlChildrenNode;
 	if (curPtr == NULL) {
 		LOGE("No privileges");
-		printf("No privileges");
 		return -EINVAL;
 	}
 
@@ -94,12 +85,10 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 			xmlChar* pPrivilege = xmlNodeListGetString(docPtr, curPtr->xmlChildrenNode, 1);
 			if (pPrivilege == NULL) {
 				LOGE("Failed to get privilege value.");
-				printf("Failed to get privilege value.");
 				return -EINVAL;
 			} else {
 				privilegeList.push_back(std::string( reinterpret_cast<char*> (pPrivilege)));
 				LOGD("Succeeded to get privilege value.");
-				printf("Succeeded to get privilege value.");
 			}
 		}
 		curPtr = curPtr->next;
@@ -112,13 +101,8 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 		ppPrivilegeList[i] = (char*)calloc(strlen(iter->c_str()) + 1, sizeof(char));
 		if (ppPrivilegeList[i] == NULL) {
 			LOGE("Failed allocate memory.");
-			printf("Failed allocate memory.");
 			destroy_char_list(ppPrivilegeList, privilegeList.size() + 1);
 			return -ENOMEM;
-		}
-		else {
-			LOGD("Succeeded allocate memory.");
-			printf("Succeeded allocate memory.");
 		}
 		memcpy(ppPrivilegeList[i], iter->c_str(), strlen(iter->c_str()));
 		++iter;
@@ -132,7 +116,6 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 
 	while (*ppPrivilegeList[0] != '\0') {
 		LOGD("privilege in the List: %s", *ppPrivilegeList);
-		printf("privilege in the List: %s", *ppPrivilegeList);
 		privilege_List.push_back(std::string(*ppPrivilegeList++));
 	}
 
@@ -140,13 +123,8 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 	ret = pInst->PgAddMonitorPolicy(user_id, std::string(packageId), privilege_List, monitor_policy);
 	if (ret != PRIV_GUARD_ERROR_SUCCESS) {
 		LOGE("Failed to add monitor policy: [%d]", ret);
-		printf("Failed to add monitor policy: [%d]", ret);
 //		return -EIO;
 		return 0;
-	}
-	else {
-		LOGD("Succeeded to add monitor policy: [%d]", ret);
-		printf("Succeeded to add monitor policy: [%d]", ret);
 	}
 
 	if (temp)
