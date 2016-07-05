@@ -191,25 +191,23 @@ PrivacyGuardClient::PgAddMonitorPolicy(const int userId, const std::string pkgId
 	res = m_pSocketClient->connect();
 	if(res != PRIV_GUARD_ERROR_SUCCESS) {
 		isServerOperation = false;
+		PG_LOGE("connect : %d", res);
 		PG_LOGD("Failed to connect. So change to the offline mode");
-	}
-	else {
+	} else {
 		isServerOperation = true;
 	}
-	TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "connect : %d", res);
 
 	if (isServerOperation == true) {
-	int result = PRIV_GUARD_ERROR_SUCCESS;
+		int result = PRIV_GUARD_ERROR_SUCCESS;
 
-	res = m_pSocketClient->call("PgAddMonitorPolicy", userId, pkgId, privacyList, monitorPolicy, &result);
-	TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, m_pSocketClient->disconnect(), "call : %d", res);
+		res = m_pSocketClient->call("PgAddMonitorPolicy", userId, pkgId, privacyList, monitorPolicy, &result);
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, m_pSocketClient->disconnect(), "call : %d", res);
 
-	res = m_pSocketClient->disconnect();
-	TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "disconnect : %d", res);
+		res = m_pSocketClient->disconnect();
+		TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "disconnect : %d", res);
 
-	return result;
-}
-	else 	{
+		return result;
+	} else 	{
 		return PgAddMonitorPolicyOffline(userId, pkgId, privacyList, monitorPolicy);
 	}
 }
