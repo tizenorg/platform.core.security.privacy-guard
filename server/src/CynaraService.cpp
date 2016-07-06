@@ -26,6 +26,7 @@
 #include <memory>
 #include <thread>
 #include <cynara-monitor.h>
+#include <pkgmgr-info.h>
 #include "PrivacyGuardTypes.h"
 #include "Utils.h"
 #include "CynaraService.h"
@@ -183,6 +184,9 @@ CynaraService::updateDb(cynara_monitor_entry **monitor_entries)
 	time_t date;
 	int res = -1;
 
+	pkgmgrinfo_pkginfo_h pkg_handle;
+	bool is_global = false;
+
 	while (*entryIter != nullptr) {
 		privilege = cynara_monitor_entry_get_privilege(*entryIter);
 		TryReturn(privilege != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "Privilege Id in the entry is NULL");
@@ -214,6 +218,23 @@ CynaraService::updateDb(cynara_monitor_entry **monitor_entries)
 			} else {
 				packageId = client;
 				PG_LOGD("Fixed Package ID: [%s]", client);
+			}
+
+			// check this package is global app
+			res = pkgmgrinfo_pkginfo_get_pkginfo(packageId.c_str(), &pkg_handle);
+			if (res != PMINFO_R_OK) {
+				PG_LOGE("Failed to do pkgmgrinfo_pkginfo_get_pkginfo [%d]", res);
+			} else {
+				res = pkgmgrinfo_pkginfo_is_global(pkg_handle, &is_global);
+				if (res != PMINFO_R_OK) {
+					PG_LOGE("Failed to do pkgmgrinfo_pkginfo_is_global [%d]", res);
+				} else {
+					if (is_global == true) {
+						PG_LOGD("[%s] is a global app. So set the user_id to 0.", packageId.c_str());
+						userId = GLOBAL_APP_USER_ID;
+					}
+				}
+				pkgmgrinfo_pkginfo_destroy_pkginfo(pkg_handle);
 			}
 
 			// datetime

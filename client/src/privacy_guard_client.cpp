@@ -17,6 +17,7 @@
 #include <string.h>
 #include <string>
 #include <memory>
+#include <pkgmgr-info.h>
 #include "PrivacyChecker.h"
 #include "PrivacyGuardClient.h"
 #include "privacy_guard_client.h"
@@ -34,36 +35,6 @@
 #ifndef TIZEN_PATH_MAX
 #define TIZEN_PATH_MAX 1024
 #endif
-
-int privacy_guard_client_add_privacy_access_log(const int user_id, const char *package_id, const char *privilege_id)
-{
-	if (user_id < 0 || package_id == NULL || privilege_id == NULL) {
-		PG_LOGE("Invalid parameters.");
-		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
-	}
-
-	int monitor_policy = 0;
-	std::string privacy_id;
-
-	PG_LOGD("user_id : %d, package_id : %s, privilege_id : %s", user_id, package_id, privilege_id);
-
-	int retval = PrivacyChecker::checkMonitorPolicyWithPrivilege(user_id, std::string(package_id), std::string(privilege_id), privacy_id, monitor_policy);
-	if (retval != PRIV_GUARD_ERROR_SUCCESS) {
-		PG_LOGE("Failed to do PrivacyChecker::checkMonitorPolicyWithPrivilege() [%d]", retval);
-		return retval;
-	}
-
-	if (monitor_policy == MONITOR_POLICY_ON) {
-		PrivacyGuardClient *pInst = PrivacyGuardClient::getInstance();
-		retval = pInst->PgAddPrivacyAccessLog(user_id, std::string(package_id), std::string(privacy_id));
-		if (retval != PRIV_GUARD_ERROR_SUCCESS) {
-			PG_LOGE("Failed to do PrivacyChecker::checkMonitorPolicyWithPrivilege() [%d]", retval);
-			return retval;
-		}
-	}
-
-	return PRIV_GUARD_ERROR_SUCCESS;
-}
 
 int privacy_guard_client_delete_all_logs_and_monitor_policy(void)
 {
@@ -255,7 +226,7 @@ int privacy_guard_client_add_monitor_policy(const int user_id, const char *packa
 
     int retval = pInst->PgAddMonitorPolicy(user_id, std::string(package_id), privilegeList, monitor_policy);
 	if (retval != PRIV_GUARD_ERROR_SUCCESS) {
-		PG_LOGE("Failed to do PrivacyGuardClient::PgAddMonitorPolicy() [%d]", retval); 
+		PG_LOGE("Failed to do PrivacyGuardClient::PgAddMonitorPolicy() [%d]", retval);
 		return retval;
 	}
 
@@ -269,11 +240,36 @@ int privacy_guard_client_update_monitor_policy(const int user_id, const char *pa
 		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
 	}
 
-    PrivacyGuardClient *pInst = PrivacyGuardClient::getInstance();
+	PrivacyGuardClient *pInst = PrivacyGuardClient::getInstance();
 
-    int retval = pInst->PgUpdateMonitorPolicy(user_id, std::string(package_id), std::string(privacy_id), monitor_policy);
+	pkgmgrinfo_pkginfo_h pkg_handle;
+	bool is_global = false;
+	int fixed_user_id = -1;
+
+	int retval = pkgmgrinfo_pkginfo_get_pkginfo(package_id, &pkg_handle);
+	if (retval != PMINFO_R_OK) {
+		PG_LOGE("Failed to do pkgmgrinfo_pkginfo_get_pkginfo [%d]", retval);
+		return retval;
+	}
+
+	retval = pkgmgrinfo_pkginfo_is_global(pkg_handle, &is_global);
+	if (retval != PMINFO_R_OK) {
+		PG_LOGE("Failed to do pkgmgrinfo_pkginfo_is_global [%d]", retval);
+		return retval;
+	}
+
+	pkgmgrinfo_pkginfo_destroy_pkginfo(pkg_handle);
+
+	if (is_global == true) {
+		PG_LOGD("[%s] is global app.", package_id);
+		fixed_user_id = 0;
+	} else {
+		fixed_user_id = user_id;
+	}
+
+    retval = pInst->PgUpdateMonitorPolicy(fixed_user_id, std::string(package_id), std::string(privacy_id), monitor_policy);
 	if (retval != PRIV_GUARD_ERROR_SUCCESS) {
-		PG_LOGE("Failed to do PrivacyGuardClient::PgUpdateMonitorPolicy() [%d]", retval); 
+		PG_LOGE("Failed to do PrivacyGuardClient::PgUpdateMonitorPolicy() [%d]", retval);
 		return retval;
 	}
 

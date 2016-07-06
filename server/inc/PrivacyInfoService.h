@@ -30,8 +30,6 @@ private:
 public:
 	static void registerCallbacks(SocketService* pSocketService)
 	{
-		pSocketService->registerServiceCallback(getInterfaceName(), std::string("PgAddPrivacyAccessLog"), PgAddPrivacyAccessLog);
-		pSocketService->registerServiceCallback(getInterfaceName(), std::string("PgAddPrivacyAccessLogTest"), PgAddPrivacyAccessLogTest);
 		pSocketService->registerServiceCallback(getInterfaceName(), std::string("PgAddMonitorPolicy"), PgAddMonitorPolicy);
 		pSocketService->registerServiceCallback(getInterfaceName(), std::string("PgDeleteAllLogsAndMonitorPolicy"), PgDeleteAllLogsAndMonitorPolicy);
 		pSocketService->registerServiceCallback(getInterfaceName(), std::string("PgDeleteLogsByPackageId"), PgDeleteLogsByPackageId);
@@ -52,8 +50,6 @@ public:
 		pSocketService->registerServiceCallback(getInterfaceName(), std::string("PgDeleteMainMonitorPolicyByUserId"), PgDeleteMainMonitorPolicyByUserId);
 	}
 
-	static void PgAddPrivacyAccessLog(SocketConnection* pConnector);
-	static void PgAddPrivacyAccessLogTest(SocketConnection* pConnector);
 	static void PgAddMonitorPolicy(SocketConnection* pConnector);
 	static void PgDeleteAllLogsAndMonitorPolicy(SocketConnection* pConnector);
 	static void PgDeleteLogsByPackageId(SocketConnection* pConnector);

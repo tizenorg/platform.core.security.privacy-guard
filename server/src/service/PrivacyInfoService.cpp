@@ -19,33 +19,6 @@
 #include "Utils.h"
 
 void
-PrivacyInfoService::PgAddPrivacyAccessLog(SocketConnection* pConnector)
-{
-	int userId = 0;
-	std::list <std::pair<std::string, std::string>> logInfoList;
-
-	pConnector->read(&userId, &logInfoList);
-
-	int result = PrivacyGuardDb::getInstance()->PgAddPrivacyAccessLog(userId, logInfoList);
-
-	pConnector->write(result);
-}
-
-void
-PrivacyInfoService::PgAddPrivacyAccessLogTest(SocketConnection* pConnector)
-{
-	int userId = 0;
-	std::string packageId;
-	std::string privacyId;
-
-	pConnector->read(&userId, &packageId, &privacyId);
-
-	int result = PrivacyGuardDb::getInstance()->PgAddPrivacyAccessLogTest(userId, packageId, privacyId);
-
-	pConnector->write(result);
-}
-
-void
 PrivacyInfoService::PgAddMonitorPolicy(SocketConnection* pConnector)
 {
 	int userId = 0;

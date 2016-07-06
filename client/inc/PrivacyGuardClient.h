@@ -54,10 +54,6 @@ public:
 
 	int PgAddMonitorPolicyOffline(const int userId, const std::string packageId, const std::list < std::string > privacyList, bool monitorPolicy);
 
-	int PgAddPrivacyAccessLog(const int userId, const std::string packageId, const std::string privacyId);
-
-	int PgAddPrivacyAccessLogTest(const int userId, const std::string packageId, const std::string privacyId);
-
 	int PgAddPrivacyAccessLogBeforeTerminate(void);
 
 	int PgAddMonitorPolicy(const int userId, const std::string pkgId, const std::list < std::string >& list, int monitorPolicy);

@@ -866,8 +866,8 @@ int
 PrivacyGuardDb::PgForeachPackageInfoByPrivacyId(const int userId, const std::string privacyId, std::list < package_data_s > &packageInfoList)
 {
 	int res = -1;
-	static const std::string query = std::string("SELECT DISTINCT PKG_ID, MONITOR_POLICY FROM MonitorPolicy WHERE USER_ID=? AND PRIVACY_ID=?");
-	static const std::string PKGINFO_SELECT = std::string("SELECT COUNT(*) FROM StatisticsMonitorInfo WHERE USER_ID=? AND PKG_ID=? AND PRIVACY_ID=? AND USE_DATE>=? AND USE_DATE<=?");
+	static const std::string query = std::string("SELECT DISTINCT PKG_ID, MONITOR_POLICY FROM MonitorPolicy WHERE (USER_ID=? OR USER_ID=0) AND PRIVACY_ID=?");
+	static const std::string PKGINFO_SELECT = std::string("SELECT COUNT(*) FROM StatisticsMonitorInfo WHERE (USER_ID=? OR USER_ID=0) AND PKG_ID=? AND PRIVACY_ID=? AND USE_DATE>=? AND USE_DATE<=?");
 	sqlite3_stmt* infoStmt;
 	time_t start_date, today_midnight, end_date;
 	struct tm date;
