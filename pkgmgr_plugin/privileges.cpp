@@ -124,7 +124,7 @@ int PKGMGR_PARSER_PLUGIN_INSTALL(xmlDocPtr docPtr, const char* packageId)
 	if (ret != PRIV_GUARD_ERROR_SUCCESS) {
 		LOGE("Failed to add monitor policy: [%d]", ret);
 //		return -EIO;
-		return 0;
+//		return 0;
 	}
 
 	if (temp)

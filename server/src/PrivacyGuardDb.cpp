@@ -82,67 +82,6 @@ PrivacyGuardDb::openSqliteDB(void)
 }
 
 int
-PrivacyGuardDb::PgAddPrivacyAccessLog(const int userId, std::list < std::pair < std::string, std::string > > logInfoList)
-{
-	time_t current_date;
-	struct tm tm;
-
-	current_date = time(NULL);
-	localtime_r(&current_date, &tm);
-	if(current_date <= 0) {
-		PG_LOGE("Failed to get current date. Date: [%d] So, return PRIV_GUARD_ERROR_SYSTEM_ERROR.", current_date);
-		return PRIV_GUARD_ERROR_SYSTEM_ERROR;
-	}
-
-	int res = -1;
-
-	static const std::string QUERY_INSERT = std::string("INSERT INTO StatisticsMonitorInfo(USER_ID, PKG_ID, PRIVACY_ID, USE_DATE) VALUES(?, ?, ?, ?)");
-
-	m_dbMutex.lock();
-
-	// initialize
-	if (m_bInitialized == false) {
-		initialize();
-	}
-	TryCatchResLogReturn(m_bInitialized == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_NOT_INITIALIZED, "Failed to initialize", res);
-
-	// open db
-	if(m_bDBOpen == false) {
-		openSqliteDB();
-	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
-
-	// prepare
-	res = sqlite3_prepare_v2(m_sqlHandler, QUERY_INSERT.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
-
-	for (std::list <std::pair <std::string, std::string>>::iterator iter = logInfoList.begin(); iter != logInfoList.end(); ++iter) {
-		PG_LOGD("packageID: %s, PrivacyID: %s", iter->first.c_str(), iter->second.c_str());
-
-		// bind
-		res = sqlite3_bind_int(m_stmt, 1, userId);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
-
-		res = sqlite3_bind_text(m_stmt, 2, iter->first.c_str(), -1, SQLITE_TRANSIENT);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
-
-		res = sqlite3_bind_text(m_stmt, 3, iter->second.c_str(), -1, SQLITE_TRANSIENT);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
-
-		res = sqlite3_bind_int(m_stmt, 4, current_date);
-		TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
-
-		res = sqlite3_step(m_stmt);
-		TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
-
-		sqlite3_reset(m_stmt);
-	}
-	m_dbMutex.unlock();
-
-	return PRIV_GUARD_ERROR_SUCCESS;
-}
-
-int
 PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::string packageId, const std::string privacyId, const time_t date)
 {
 	if(userId < 0 || date <= 0) {
@@ -203,66 +142,6 @@ PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::stri
 
 	return PRIV_GUARD_ERROR_SUCCESS;
 }
-
-int
-PrivacyGuardDb::PgAddPrivacyAccessLogTest(const int userId, const std::string packageId, const std::string privacyId)
-{
-	time_t current_date;
-	struct tm tm;
-	current_date = time(NULL);
-	localtime_r(&current_date, &tm);
-
-	if(current_date <= 0) {
-		return PRIV_GUARD_ERROR_INVALID_PARAMETER;
-	}
-
-	int res = SQLITE_OK;
-
-	static const std::string QUERY_INSERT = std::string("INSERT INTO StatisticsMonitorInfo(USER_ID, PKG_ID, PRIVACY_ID, USE_DATE) VALUES(?, ?, ?, ?)");
-
-	m_dbMutex.lock();
-
-	// initialize
-	if (m_bInitialized == false) {
-		initialize();
-	}
-	TryCatchResLogReturn(m_bInitialized == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_NOT_INITIALIZED, "Failed to initialize", res);
-
-	// open db
-	if(m_bDBOpen == false) {
-		openSqliteDB();
-	}
-	TryCatchResLogReturn(m_bDBOpen == true, m_dbMutex.unlock(), PRIV_GUARD_ERROR_IO_ERROR, "openSqliteDB : %d", res);
-
-	PG_LOGD("addlogToDb m_sqlHandler : %p", m_sqlHandler);
-
-	// prepare
-	res = sqlite3_prepare_v2(m_sqlHandler, QUERY_INSERT.c_str(), -1, &m_stmt, NULL);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_prepare_v2 : %d", res);
-
-	// bind
-	res = sqlite3_bind_int(m_stmt, 1, userId);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
-
-	res = sqlite3_bind_text(m_stmt, 2, packageId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
-
-	res = sqlite3_bind_text(m_stmt, 3, privacyId.c_str(), -1, SQLITE_TRANSIENT);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_text : %d", res);
-
-	res = sqlite3_bind_int(m_stmt, 4, current_date);
-	TryCatchResLogReturn(res == SQLITE_OK, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_bind_int : %d", res);
-
-	res = sqlite3_step(m_stmt);
-	TryCatchResLogReturn(res == SQLITE_DONE, m_dbMutex.unlock(), PRIV_GUARD_ERROR_DB_ERROR, "sqlite3_step : %d", res);
-
-	sqlite3_reset(m_stmt);
-
-	m_dbMutex.unlock();
-
-	return PRIV_GUARD_ERROR_SUCCESS;
-}
-
 
 int
 PrivacyGuardDb::PgAddMonitorPolicy(const int userId, const std::string packageId, const std::list < std::string > privacyList, bool monitorPolicy)
@@ -489,8 +368,7 @@ PrivacyGuardDb::PgDeleteMonitorPolicyByPackageId(const std::string packageId)
 }
 
 int
-PrivacyGuardDb::PgForeachTotalPrivacyCountOfPackage(const int userId, const int startDate, const int endDate,
-		std::list < std::pair < std::string, int > >& packageInfoList)
+PrivacyGuardDb::PgForeachTotalPrivacyCountOfPackage(const int userId, const int startDate, const int endDate, std::list < std::pair < std::string, int > >& packageInfoList)
 {
 	int res = -1;
 
