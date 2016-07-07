@@ -33,6 +33,8 @@
 #include "PrivacyGuardDb.h"
 #include "PrivacyIdInfo.h"
 
+#define GLOBAL_USER tzplatform_getuid(TZ_SYS_GLOBALAPP_USER)
+
 #define BUF_SIZE 256
 #define ONE_SEC (SLEEP_TIME * 20)
 
@@ -178,12 +180,12 @@ CynaraService::updateDb(cynara_monitor_entry **monitor_entries)
 
 	// DB update
 	const char *user = NULL, *client = NULL, *privilege = NULL;
+	char *package_id = NULL, *package_id_dup = NULL;
 	const timespec *timestamp = NULL;
-	int userId;
-	std::string packageId, privacyId;
+	uid_t userId;
+	std::string appId, privacyId, packageId;
 	time_t date;
 	int res = -1;
-
 	pkgmgrinfo_pkginfo_h pkg_handle;
 	bool is_global = false;
 
@@ -198,9 +200,9 @@ CynaraService::updateDb(cynara_monitor_entry **monitor_entries)
 			user = cynara_monitor_entry_get_user(*entryIter);
 			TryReturn(user != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "User Id in the entry is NULL");
 
-			// Package ID - string
+			// App ID - string
 			client = cynara_monitor_entry_get_client(*entryIter);
-			TryReturn(client != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "Package Id in the entry is NULL");
+			TryReturn(client != NULL, PRIV_GUARD_ERROR_SYSTEM_ERROR, , "App Id in the entry is NULL");
 
 			// timestamp
 			timestamp = cynara_monitor_entry_get_timestamp(*entryIter);
@@ -209,21 +211,48 @@ CynaraService::updateDb(cynara_monitor_entry **monitor_entries)
 			// convert string to integer
 			userId = atoi(user);
 
-			// check package ID
-			std::string tempPackageId = client;
-			PG_LOGD("Package ID from cynara: [%s]", client);
-			if (tempPackageId.substr(0, USER_APP_PREFIX_LEN).compare(USER_APP_PREFIX) == 0) {
-				packageId = tempPackageId.substr(USER_APP_PREFIX_LEN, tempPackageId.length() - USER_APP_PREFIX_LEN);
-				PG_LOGD("Fixed Package ID: [%s]", packageId.c_str());
+			// check app ID
+			std::string tempAppId = client;
+			PG_LOGD("App ID from cynara: [%s]", client);
+			if (tempAppId.substr(0, USER_APP_PREFIX_LEN).compare(USER_APP_PREFIX) == 0) {
+				appId = tempAppId.substr(USER_APP_PREFIX_LEN, tempAppId.length() - USER_APP_PREFIX_LEN);
+				PG_LOGD("App ID: [%s]", appId.c_str());
 			} else {
-				packageId = client;
-				PG_LOGD("Fixed Package ID: [%s]", client);
+				appId = client;
+				PG_LOGD("App ID: [%s]", client);
+			}
+
+			// get package ID from app ID			
+			pkgmgrinfo_appinfo_h pkgmgrinfo_appinfo;
+			PG_LOGD("User ID: [%d], Global User ID: [%d]", userId, GLOBAL_USER);
+			if (userId == GLOBAL_USER) {
+				res = pkgmgrinfo_appinfo_get_appinfo(appId.c_str(), &pkgmgrinfo_appinfo);
+			} else {
+				res = pkgmgrinfo_appinfo_get_usr_appinfo(appId.c_str(), userId, &pkgmgrinfo_appinfo);
+			}
+			if (res != PMINFO_R_OK) {
+				PG_LOGE("Failed to do pkgmgrinfo_appinfo_get_appinfo or pkgmgrinfo_appinfo_get_usr_appinfo [%d] for the app [%s] with user [%d]. So set the package ID to app ID.", res, appId.c_str(), userId);
+				packageId = appId;
+			} else {
+				res = pkgmgrinfo_appinfo_get_pkgname(pkgmgrinfo_appinfo, &package_id);
+				if (res != PMINFO_R_OK) {
+					PG_LOGE("Failed to do pkgmgrinfo_appinfo_get_pkgname [%d] for the app [%s]. So set the package ID to app ID.", res, appId.c_str());
+					packageId = appId;
+				}
+				PG_LOGD("Package ID of [%s] is [%s]", appId.c_str(), package_id);
+				package_id_dup = strdup(package_id);
+				packageId = package_id_dup;
+				pkgmgrinfo_appinfo_destroy_appinfo(pkgmgrinfo_appinfo);
 			}
 
 			// check this package is global app
-			res = pkgmgrinfo_pkginfo_get_pkginfo(packageId.c_str(), &pkg_handle);
+			if (userId == GLOBAL_USER) {
+				res = pkgmgrinfo_pkginfo_get_pkginfo(packageId.c_str(), &pkg_handle);
+			} else {
+				res = pkgmgrinfo_pkginfo_get_usr_pkginfo(packageId.c_str(), userId, &pkg_handle);
+			}
 			if (res != PMINFO_R_OK) {
-				PG_LOGE("Failed to do pkgmgrinfo_pkginfo_get_pkginfo [%d]", res);
+				PG_LOGE("Failed to do pkgmgrinfo_pkginfo_get_pkginfo or pkgmgrinfo_pkginfo_get_usr_pkginfo [%d] for the package [%s] with user [%d]", res, packageId.c_str(), userId);
 			} else {
 				res = pkgmgrinfo_pkginfo_is_global(pkg_handle, &is_global);
 				if (res != PMINFO_R_OK) {
