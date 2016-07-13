@@ -213,7 +213,7 @@ CynaraService::updateDb(cynara_monitor_entry **monitor_entries)
 
 			// check app ID
 			std::string tempAppId = client;
-			PG_LOGD("App ID from cynara: [%s]", client);
+			//PG_LOGD("App ID from cynara: [%s]", client);
 			if (tempAppId.substr(0, USER_APP_PREFIX_LEN).compare(USER_APP_PREFIX) == 0) {
 				appId = tempAppId.substr(USER_APP_PREFIX_LEN, tempAppId.length() - USER_APP_PREFIX_LEN);
 				PG_LOGD("App ID: [%s]", appId.c_str());
@@ -224,7 +224,6 @@ CynaraService::updateDb(cynara_monitor_entry **monitor_entries)
 
 			// get package ID from app ID			
 			pkgmgrinfo_appinfo_h pkgmgrinfo_appinfo;
-			PG_LOGD("User ID: [%d], Global User ID: [%d]", userId, GLOBAL_USER);
 			if (userId == GLOBAL_USER) {
 				res = pkgmgrinfo_appinfo_get_appinfo(appId.c_str(), &pkgmgrinfo_appinfo);
 			} else {
@@ -239,7 +238,7 @@ CynaraService::updateDb(cynara_monitor_entry **monitor_entries)
 					PG_LOGE("Failed to do pkgmgrinfo_appinfo_get_pkgname [%d] for the app [%s]. So set the package ID to app ID.", res, appId.c_str());
 					packageId = appId;
 				}
-				PG_LOGD("Package ID of [%s] is [%s]", appId.c_str(), package_id);
+				//PG_LOGD("Package ID of [%s] is [%s]", appId.c_str(), package_id);
 				package_id_dup = strdup(package_id);
 				packageId = package_id_dup;
 				pkgmgrinfo_appinfo_destroy_appinfo(pkgmgrinfo_appinfo);
@@ -259,7 +258,6 @@ CynaraService::updateDb(cynara_monitor_entry **monitor_entries)
 					PG_LOGE("Failed to do pkgmgrinfo_pkginfo_is_global [%d]", res);
 				} else {
 					if (is_global == true) {
-						PG_LOGD("[%s] is a global app. So set the user_id to 0.", packageId.c_str());
 						userId = GLOBAL_APP_USER_ID;
 					}
 				}
@@ -271,10 +269,7 @@ CynaraService::updateDb(cynara_monitor_entry **monitor_entries)
 
 			// add access log
 			int ret = PrivacyGuardDb::getInstance()->PgAddPrivacyAccessLogForCynara(userId, packageId, privacyId, date);
-			if(ret == PRIV_GUARD_ERROR_SUCCESS){
-				PG_LOGD("Succeeded to add access log to DB. UserID:[%d], PackageID:[%s], Privacy:[%s]", userId, packageId.c_str(), privacyId.c_str());
-			}
-			else{
+			if(ret != PRIV_GUARD_ERROR_SUCCESS){
 				PG_LOGE("Failed to add access log to DB. UserID:[%d], PackageID:[%s], Privacy:[%s]", userId, packageId.c_str(), privacyId.c_str());				
 			}
 		}

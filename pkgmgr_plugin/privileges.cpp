@@ -25,7 +25,7 @@
 #include "privacy_guard_client_internal.h"
 #include "PrivacyGuardClient.h"
 
-#define DEFAULT_MONITOR_POLICY 1
+#define DEFAULT_MONITOR_POLICY 0
 
 static const xmlChar _NODE_PRIVILEGES[]		= "privileges";
 static const xmlChar _NODE_PRIVILEGE[]		= "privilege";

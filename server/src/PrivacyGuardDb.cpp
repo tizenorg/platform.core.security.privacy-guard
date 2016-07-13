@@ -96,7 +96,7 @@ PrivacyGuardDb::PgAddPrivacyAccessLogForCynara(const int userId, const std::stri
 	res = PgGetMonitorPolicy(userId, packageId, privacyId, monitorPolicy);
 	TryReturn(res == PRIV_GUARD_ERROR_SUCCESS, res, , "PgGetMonitorPolicy is failed: [%d]", res);
 	if (monitorPolicy == 0) {
-		PG_LOGD("Monitor Policy is 0. So skip it. UserId:[%d], PrivacyId:[%s], PackageId:[%s], Policy:[%d]", userId, privacyId.c_str(), packageId.c_str(), monitorPolicy);
+		//PG_LOGD("Monitor Policy is 0. So skip it. UserId:[%d], PrivacyId:[%s], PackageId:[%s], Policy:[%d]", userId, privacyId.c_str(), packageId.c_str(), monitorPolicy);
 		return PRIV_GUARD_ERROR_SUCCESS;
 	}
 
