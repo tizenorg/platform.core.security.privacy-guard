@@ -9,6 +9,7 @@ ExecStart=/usr/bin/privacy-guard-server
 Sockets=privacy-guard-server.socket
 Restart=always
 RestartSec=0
+SmackProcessLabel=System
 
 [Install]
 WantedBy=multi-user.target
